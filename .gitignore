@@ -1,0 +1,5 @@
+.*.swp
+Cargo.lock
+target
+netcode_capnp.rs
+.rust
