@@ -1,10 +1,14 @@
 extern crate "nalgebra" as na;
-//extern crate ncollide;
 extern crate gfx;
 extern crate glfw;
 
+pub mod bsp;
+pub mod graphics;
 pub mod player;
+pub mod settings;
 
 pub struct Game {
-    pub players: Vec<player::Player>
+    pub players: Vec<player::Player>,
+
+    pub settings: settings::Settings,
 }

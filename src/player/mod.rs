@@ -1,9 +1,7 @@
-use Model;
+use graphics::Model;
 use na;
-use std::default::Default;
-use std::rc::Arc;
+use std::sync::Arc;
 
-#[allow
 pub struct Player {
     pub pos: na::Vec3<f32>,
     pub eyeheight: f32,
