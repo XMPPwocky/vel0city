@@ -26,9 +26,13 @@ impl Plane {
             nn / rn
         };
 
-        if toi >= 0.0 { Some(CastResult {
-            toi: toi
-        }) } else {
+        if toi >= 0.0 { 
+            Some(
+                CastResult {
+                    toi: toi
+                }
+            ) 
+        } else {
             None
         }
     }
@@ -124,6 +128,21 @@ mod test {
         CastResult
     };
 
+    macro_rules! assert_toi {
+        ($e: expr, $t: expr) => {
+            if let Some(ref c) = $e {
+                if na::approx_eq(&c.toi, &$t) {
+                    ()
+                } else {
+                    panic!("Wrong TOI: Expected {:?}, got {:?}", $t, c.toi);
+                }
+            } else {
+                panic!("Expected a hit, got a miss!")
+            }
+        }
+    }
+
+
     fn simple_plane() -> Tree {
         Tree {
             nodes: vec![
@@ -179,7 +198,7 @@ mod test {
             orig: na::Pnt3::new(-1.0, 0.0, 0.0),
             dir: na::Vec3::new(1.0, 0.0, 0.0)
         };
-        assert!(tree.cast_ray(&r1).is_some());
+        assert_toi!(tree.cast_ray(&r1), 1.0);
 
         //      <-   |
         let r2 = Ray {
@@ -200,6 +219,6 @@ mod test {
             orig: na::Pnt3::new(1.0, 0.0, 0.0),
             dir: na::Vec3::new(-1.0, 0.0, 0.0)
         };
-        assert!(tree.cast_ray(&r4).is_some());
+        assert_toi!(tree.cast_ray(&r4), 1.0);
     }
 }
