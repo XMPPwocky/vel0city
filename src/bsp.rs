@@ -59,9 +59,35 @@ pub struct Tree {
     root: NodeIndex
 }
 impl Tree {
+    pub fn contains_point(&self, point: &na::Pnt3<f32>) -> bool {
+        self.contains_point_recursive(point, self.root)
+    }
+    fn contains_point_recursive(&self, point: &na::Pnt3<f32>, nodeidx: NodeIndex) -> bool {
+        match self.nodes[nodeidx] {
+            Node::Inner { ref plane, pos, neg } => {
+                if na::dot(
+                    &na::Vec4::new(point.x, point.y, point.z, 1.0),
+                    &na::Vec4::new(plane.norm.x, plane.norm.y, plane.norm.z, plane.dist)
+                    ) > 0.0 {
+                        self.contains_point_recursive(point, pos)
+                } else {
+                    self.contains_point_recursive(point, neg)
+                }
+            }
+            Node::Leaf { solid, .. } => solid,
+        }
+    }
 
     pub fn cast_ray(&self, ray: &Ray) -> Option<CastResult> {
-        self.cast_ray_recursive(ray, self.root)
+        // This check is necessary because the recursive check is "edge-triggered".
+        // In other words, it only considers each plane and the line, and does not check the starting point.
+        if self.contains_point(&ray.orig) {
+            Some(CastResult {
+                toi: 0.0
+            })
+        } else {
+            self.cast_ray_recursive(ray, self.root)
+        }
     }
 
     fn cast_ray_recursive(&self, ray: &Ray, nodeidx: NodeIndex) -> Option<CastResult> {
@@ -207,15 +233,15 @@ mod test {
         };
         assert!(!tree.cast_ray(&r2).is_some());
 
+        // Note that in these cases, the ray starts off in a solid
         //      |    ->
         let r3 = Ray {
             orig: na::Pnt3::new(1.0, 0.0, 0.0),
             dir: na::Vec3::new(1.0, 0.0, 0.0)
         };
-        assert!(!tree.cast_ray(&r3).is_some());
+        assert_toi!(tree.cast_ray(&r3), 0.0);
 
         //      |    <-
-        // Note that in this case, the ray starts off in a solid
         let r4 = Ray {
             orig: na::Pnt3::new(1.0, 0.0, 0.0),
             dir: na::Vec3::new(-1.0, 0.0, 0.0)
