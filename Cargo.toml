@@ -21,3 +21,6 @@ git = "https://github.com/dwrensha/capnpc-rust"
 [dependencies.glfw]
 git = "https://github.com/bjz/glfw-rs"
 default-features = false
+
+#[dependencies.ncollide]
+#git = "https://github.com/sebcrozet/ncollide"
