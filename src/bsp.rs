@@ -193,13 +193,13 @@ mod test {
             orig: na::Pnt3::new(1.0, 0.0, 0.0),
             dir: na::Vec3::new(1.0, 0.0, 0.0)
         };
-        assert!(tree.cast_ray(&r1).is_some());
+        assert!(!tree.cast_ray(&r3).is_some());
 
         //      |    <-
         let r4 = Ray {
             orig: na::Pnt3::new(1.0, 0.0, 0.0),
             dir: na::Vec3::new(-1.0, 0.0, 0.0)
         };
-        assert!(!tree.cast_ray(&r2).is_some());
+        assert!(tree.cast_ray(&r4).is_some());
     }
 }
