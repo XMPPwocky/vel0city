@@ -215,10 +215,11 @@ mod test {
         assert!(!tree.cast_ray(&r3).is_some());
 
         //      |    <-
+        // Note that in this case, the ray starts off in a solid
         let r4 = Ray {
             orig: na::Pnt3::new(1.0, 0.0, 0.0),
             dir: na::Vec3::new(-1.0, 0.0, 0.0)
         };
-        assert_toi!(tree.cast_ray(&r4), 1.0);
+        assert_toi!(tree.cast_ray(&r4), 0.0);
     }
 }
