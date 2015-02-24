@@ -248,4 +248,14 @@ mod test {
         };
         assert_toi!(tree.cast_ray(&r4), 0.0);
     }
+
+    #[test]
+    fn bsp_contains_point() { 
+        let tree = simple_plane();
+
+        let p1 = na::Pnt3::new(1.0, 0.0, 0.0);
+        let p2 = na::Pnt3::new(-1.0, 0.0, 0.0);
+        assert!(tree.contains_point(&p1));
+        assert!(!tree.contains_point(&p2));
+    }
 }
