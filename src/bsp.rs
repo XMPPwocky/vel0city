@@ -7,6 +7,7 @@ use self::cast::{
     CastResult
 };
 
+#[derive(RustcDecodable, RustcEncodable, Debug)]
 pub struct Plane {
     pub norm: na::Vec3<f32>,
     pub dist: f32
@@ -45,6 +46,7 @@ impl Plane {
 
 pub type NodeIndex = usize;
 
+#[derive(RustcEncodable, RustcDecodable, Debug)]
 pub enum Node {
     Inner {
         plane: Plane,
@@ -58,9 +60,10 @@ pub enum Node {
     }
 }
 
+#[derive(RustcDecodable, RustcEncodable,Debug)]
 pub struct Tree {
-    nodes: Vec<Node>,
-    root: NodeIndex
+    pub nodes: Vec<Node>,
+    pub root: NodeIndex
 }
 impl Tree {
     pub fn contains_point(&self, point: &na::Pnt3<f32>) -> bool {
@@ -275,25 +278,4 @@ mod test {
         assert!(!tree.contains_point(&p3));
     }
 
-/*    #[test]
-    fn weird_raytracer() { 
-        let tree = test_tree();
-        for x in (0..80) {
-            let r = Ray {
-                orig: na::Pnt3::new((x - 40) as f32 / 10.0, 1.5, 0.0),
-                dir: na::Vec3::new(0.0, -1.0, 0.0)
-            };
-            if let Some(c) = tree.cast_ray(&r) {
-                if c.toi <= 1.0 {
-                    print!("X");
-                } else {
-                    print!("x");
-                }
-            } else {
-                print!(".");
-            }
-        }
-        println!("");
-        panic!();
-    }*/
 }

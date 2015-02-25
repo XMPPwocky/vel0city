@@ -1,0 +1,74 @@
+{
+  "nodes": [
+    {
+      "variant": "Inner",
+      "fields": [
+        {
+          "norm": {
+            "x": 0.0,
+            "y": 1.0,
+            "z": 0.0
+          },
+          "dist": 1.0
+        },
+        1,
+        2
+      ]
+    },
+    {
+      "variant": "Leaf",
+      "fields": [
+        false 
+      ]
+    },
+    {
+      "variant": "Inner",
+      "fields": [
+        {
+          "norm": {
+            "x": 1.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "dist": 0.0
+        },
+        4,
+        3 
+      ]
+    },
+    {
+      "variant": "Leaf",
+      "fields": [
+        false 
+      ]
+    },
+    {
+      "variant": "Inner",
+      "fields": [
+        {
+          "norm": {
+            "x": 0.707,
+            "y": 0.0,
+            "z": 0.707
+          },
+          "dist": 0.0
+        },
+        5,
+        6 
+      ]
+    },
+    {
+      "variant": "Leaf",
+      "fields": [
+        false 
+      ]
+    },
+    {
+      "variant": "Leaf",
+      "fields": [
+        true 
+      ]
+    }
+  ],
+  "root": 0
+}

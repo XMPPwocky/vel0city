@@ -22,5 +22,8 @@ git = "https://github.com/dwrensha/capnpc-rust"
 git = "https://github.com/bjz/glfw-rs"
 default-features = false
 
+[dependencies]
+rustc-serialize = "*"
+
 #[dependencies.ncollide]
 #git = "https://github.com/sebcrozet/ncollide"

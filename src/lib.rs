@@ -1,4 +1,5 @@
 extern crate "nalgebra" as na;
+extern crate "rustc-serialize" as rustc_serialize; 
 extern crate gfx;
 extern crate glfw;
 
