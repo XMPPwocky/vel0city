@@ -271,12 +271,6 @@ mod test {
             dir: na::Vec3::new(-1.0, 0.0, 0.0)
         };
         assert!(!tree.cast_ray(&r2).is_some());
-
-        let r3 = Ray {
-            orig: na::Pnt3::new(1.1, 1.5, 0.0),
-            dir: na::Vec3::new(0.0, -1.0, 0.0)
-        };
-        assert_castresult!(tree.cast_ray(&r3), 1.5, na::Vec3::new(1.0, 0.0, 0.0));
     }
 
     #[test]
@@ -285,8 +279,10 @@ mod test {
 
         let p1 = na::Pnt3::new(0.5, 0.0, 0.0);
         let p2 = na::Pnt3::new(1.5, 0.0, 0.0);
+        let p3 = na::Pnt3::new(0.5, 1.5, 0.0);
         assert!(tree.contains_point(&p1));
         assert!(!tree.contains_point(&p2));
+        assert!(!tree.contains_point(&p3));
     }
 
 /*    #[test]
