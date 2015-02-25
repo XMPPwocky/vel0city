@@ -117,7 +117,10 @@ impl Tree {
                 if solid {
                     let ref parent = self.nodes[parent];
                     if let &Node::Inner { ref plane, .. } = parent {
-                        plane.cast_ray(ray)
+                        println!("Casting...");
+                        let cast = plane.cast_ray(ray);
+                        println!("{:?}", cast);
+                        cast
                     } else {
                         unreachable!()
                     }
