@@ -29,7 +29,8 @@ impl Plane {
         if toi >= 0.0 { 
             Some(
                 CastResult {
-                    toi: toi
+                    toi: toi,
+                    norm: self.norm
                 }
             ) 
         } else {
@@ -82,9 +83,7 @@ impl Tree {
         // This check is necessary because the recursive check is "edge-triggered".
         // In other words, it only considers each plane and the line, and does not check the starting point.
         if self.contains_point(&ray.orig) {
-            Some(CastResult {
-                toi: 0.0
-            })
+            None
         } else {
             self.cast_ray_recursive(ray, self.root)
         }
@@ -137,7 +136,10 @@ pub mod cast {
     }
 
     pub struct CastResult {
+        /// Time of impact.
         pub toi: f32,
+        /// Normal of what it hit, where it hit.
+        pub norm: na::Vec3<f32>,
     }
 }
 
@@ -239,14 +241,14 @@ mod test {
             orig: na::Pnt3::new(1.0, 0.0, 0.0),
             dir: na::Vec3::new(1.0, 0.0, 0.0)
         };
-        assert_toi!(tree.cast_ray(&r3), 0.0);
+        assert!(!tree.cast_ray(&r3).is_some());
 
         //      |    <-
         let r4 = Ray {
             orig: na::Pnt3::new(1.0, 0.0, 0.0),
             dir: na::Vec3::new(-1.0, 0.0, 0.0)
         };
-        assert_toi!(tree.cast_ray(&r4), 0.0);
+        assert!(!tree.cast_ray(&r4).is_some());
     }
 
     #[test]
