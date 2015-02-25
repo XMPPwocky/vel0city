@@ -92,7 +92,6 @@ impl Tree {
     }
 
     fn cast_ray_recursive(&self, ray: &Ray, nodeidx: NodeIndex, hack: Option<&CastResult>) -> Option<CastResult> {
-        println!("Node {}", nodeidx);
         match self.nodes[nodeidx] {
             Node::Inner { ref plane, pos, neg, .. } => {
                 let dir = ray.orig - plane.point_on();
@@ -108,7 +107,6 @@ impl Tree {
                 let hack = plcast.or(hack);
 
                 if plcast.map(|cast| cast.toi <= 1.0).unwrap_or(false) {
-                    println!("Checking two...");
                     // we might need to go "through" the plane
                     // check both sides
                     self.cast_ray_recursive(ray, first, hack) 
