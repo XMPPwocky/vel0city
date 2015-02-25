@@ -87,11 +87,11 @@ impl Tree {
         if self.contains_point(&ray.orig) {
             None
         } else {
-            self.cast_ray_recursive(ray, self.root)
+            self.cast_ray_recursive(ray, self.root, None)
         }
     }
 
-    fn cast_ray_recursive(&self, ray: &Ray, nodeidx: NodeIndex) -> Option<CastResult> {
+    fn cast_ray_recursive(&self, ray: &Ray, nodeidx: NodeIndex, hack: Option<&CastResult>) -> Option<CastResult> {
         println!("Node {}", nodeidx);
         match self.nodes[nodeidx] {
             Node::Inner { ref plane, pos, neg, .. } => {
@@ -102,25 +102,27 @@ impl Tree {
                     (neg, pos)
                 };
 
-                if plane.cast_ray(ray).map(|cast| cast.toi <= 1.0).unwrap_or(false) {
+                let plcast = plane.cast_ray(ray);
+                let plcast = plcast.as_ref();
+
+                let hack = plcast.or(hack);
+
+                if plcast.map(|cast| cast.toi <= 1.0).unwrap_or(false) {
                     println!("Checking two...");
                     // we might need to go "through" the plane
                     // check both sides
-                    self.cast_ray_recursive(ray, first)
-                        .or_else(|| self.cast_ray_recursive(ray, last))
+                    self.cast_ray_recursive(ray, first, hack) 
+                        .or_else(|| self.cast_ray_recursive(ray, last, hack))
                 } else {
                     // only need to check one subtree
-                    self.cast_ray_recursive(ray, first)
+                    self.cast_ray_recursive(ray, first, hack)
                 }
             }
             Node::Leaf { parent, solid } => {
                 if solid {
                     let ref parent = self.nodes[parent];
                     if let &Node::Inner { ref plane, .. } = parent {
-                        println!("Casting...");
-                        let cast = plane.cast_ray(ray);
-                        println!("{:?}", cast);
-                        cast
+                        plane.cast_ray(ray).or(hack.map(|c| (*c).clone()))
                     } else {
                         unreachable!()
                     }
@@ -142,6 +144,7 @@ pub mod cast {
         pub dir: na::Vec3<f32>
     }
 
+    #[derive(Clone,Debug)]
     pub struct CastResult {
         /// Time of impact.
         pub toi: f32,
