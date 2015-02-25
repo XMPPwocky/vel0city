@@ -156,13 +156,19 @@ mod test {
         CastResult
     };
 
-    macro_rules! assert_toi {
-        ($e: expr, $t: expr) => {
+    macro_rules! assert_castresult {
+        ($e: expr, $toi: expr, $norm: expr) => {
             if let Some(ref c) = $e {
-                if na::approx_eq(&c.toi, &$t) {
+                if na::approx_eq(&c.toi, $toi) {
                     ()
                 } else {
-                    panic!("Wrong TOI: Expected {:?}, got {:?}", $t, c.toi);
+                    panic!("Wrong TOI: Expected {:?}, got {:?}", $toi, c.toi);
+                }
+
+                if na::approx_eq(&c.norm, $norm) {
+                    ()
+                } else {
+                    panic!("Wrong normal: Expected {:?}, got {:?}", $norm, c.norm);
                 }
             } else {
                 panic!("Expected a hit, got a miss!")
