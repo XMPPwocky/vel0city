@@ -12,6 +12,10 @@ pub struct Plane {
     pub dist: f32
 }
 impl Plane {
+    pub fn point_on(&self) -> na::Pnt3<f32> {
+        (self.norm * self.dist).to_pnt()
+    }
+
     pub fn cast_ray(&self, ray: &Ray) -> Option<CastResult> {
         let rn = ray.dir.dot(&self.norm);
         let nn = (self.norm * self.dist - ray.orig.to_vec()).dot(&self.norm);
@@ -66,8 +70,7 @@ impl Tree {
     fn contains_point_recursive(&self, point: &na::Pnt3<f32>, nodeidx: NodeIndex) -> bool {
         match self.nodes[nodeidx] {
             Node::Inner { ref plane, pos, neg } => {
-                let planept = plane.norm * plane.dist;
-                let dir = point.to_vec() - planept; 
+                let dir = *point - plane.point_on(); 
                 if na::dot(&dir, &plane.norm) > 0.0 {
                     self.contains_point_recursive(point, pos)
                 } else {
@@ -89,20 +92,22 @@ impl Tree {
     }
 
     fn cast_ray_recursive(&self, ray: &Ray, nodeidx: NodeIndex) -> Option<CastResult> {
+        println!("Node {}", nodeidx);
         match self.nodes[nodeidx] {
             Node::Inner { ref plane, pos, neg, .. } => {
-                let (first, last) = if plane.norm.dot(&ray.dir) > 0.0 {
+                let dir = ray.orig - plane.point_on();
+                let (first, last) = if plane.norm.dot(&dir) > 0.0 {
                     (pos, neg)
                 } else {
                     (neg, pos)
                 };
 
-                let cast = plane.cast_ray(ray);
-                if let Some(cast) = plane.cast_ray(ray) {
+                if plane.cast_ray(ray).map(|cast| cast.toi <= 1.0).unwrap_or(false) {
+                    println!("Checking two...");
                     // we might need to go "through" the plane
                     // check both sides
                     self.cast_ray_recursive(ray, first)
-                        .or(self.cast_ray_recursive(ray, last))
+                        .or_else(|| self.cast_ray_recursive(ray, last))
                 } else {
                     // only need to check one subtree
                     self.cast_ray_recursive(ray, first)
@@ -203,9 +208,21 @@ mod test {
                     solid: false,
                     parent: 2,
                 },
+                Node::Inner {
+                    plane: Plane {
+                        norm: na::Vec3::new(0.0, 1.0, 0.0),
+                        dist: 1.0,
+                    },
+                    pos: 5,
+                    neg: 6,
+                },
+                Node::Leaf {
+                    solid: false,
+                    parent: 4,
+                },
                 Node::Leaf {
                     solid: true,
-                    parent: 2,
+                    parent: 4,
                 }
             ],
             root: 0
