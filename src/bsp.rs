@@ -66,11 +66,10 @@ impl Tree {
     fn contains_point_recursive(&self, point: &na::Pnt3<f32>, nodeidx: NodeIndex) -> bool {
         match self.nodes[nodeidx] {
             Node::Inner { ref plane, pos, neg } => {
-                if na::dot(
-                    &na::Vec4::new(point.x, point.y, point.z, 1.0),
-                    &na::Vec4::new(plane.norm.x, plane.norm.y, plane.norm.z, plane.dist)
-                    ) > 0.0 {
-                        self.contains_point_recursive(point, pos)
+                let planept = plane.norm * plane.dist;
+                let dir = point.to_vec() - planept; 
+                if na::dot(&dir, &plane.norm) > 0.0 {
+                    self.contains_point_recursive(point, pos)
                 } else {
                     self.contains_point_recursive(point, neg)
                 }
@@ -159,13 +158,13 @@ mod test {
     macro_rules! assert_castresult {
         ($e: expr, $toi: expr, $norm: expr) => {
             if let Some(ref c) = $e {
-                if na::approx_eq(&c.toi, $toi) {
+                if na::approx_eq(&c.toi, &$toi) {
                     ()
                 } else {
                     panic!("Wrong TOI: Expected {:?}, got {:?}", $toi, c.toi);
                 }
 
-                if na::approx_eq(&c.norm, $norm) {
+                if na::approx_eq(&c.norm, &$norm) {
                     ()
                 } else {
                     panic!("Wrong normal: Expected {:?}, got {:?}", $norm, c.norm);
@@ -177,7 +176,7 @@ mod test {
     }
 
 
-    fn simple_plane() -> Tree {
+    fn test_tree() -> Tree {
         Tree {
             nodes: vec![
                 Node::Inner {
@@ -185,16 +184,28 @@ mod test {
                         norm: na::Vec3::new(1.0, 0.0, 0.0),
                         dist: 0.0,
                     },
-                    pos: 1,
-                    neg: 2,
-                },
-                Node::Leaf {
-                    solid: true,
-                    parent: 0,
+                    pos: 2,
+                    neg: 1,
                 },
                 Node::Leaf {
                     solid: false,
                     parent: 0,
+                },
+                Node::Inner {
+                    plane: Plane {
+                        norm: na::Vec3::new(1.0, 0.0, 0.0),
+                        dist: 1.0,
+                    },
+                    pos: 3,
+                    neg: 4,
+                },
+                Node::Leaf {
+                    solid: false,
+                    parent: 2,
+                },
+                Node::Leaf {
+                    solid: true,
+                    parent: 2,
                 }
             ],
             root: 0
@@ -224,45 +235,30 @@ mod test {
     }
 
     #[test]
-    fn bsp_raycast_simple() { 
-        let tree = simple_plane();
+    fn bsp_raycast() { 
+        let tree = test_tree();
 
-        //      ->   |
+        //      ->   |  |
         let r1 = Ray {
-            orig: na::Pnt3::new(-1.0, 0.0, 0.0),
+            orig: na::Pnt3::new(-0.5, 0.0, 0.0),
             dir: na::Vec3::new(1.0, 0.0, 0.0)
         };
-        assert_toi!(tree.cast_ray(&r1), 1.0);
+        assert_castresult!(tree.cast_ray(&r1), 1.5, na::Vec3::new(1.0, 0.0, 0.0));
 
-        //      <-   |
+        //      <-   |  |
         let r2 = Ray {
-            orig: na::Pnt3::new(-1.0, 0.0, 0.0),
+            orig: na::Pnt3::new(-0.5, 0.0, 0.0),
             dir: na::Vec3::new(-1.0, 0.0, 0.0)
         };
         assert!(!tree.cast_ray(&r2).is_some());
-
-        // Note that in these cases, the ray starts off in a solid
-        //      |    ->
-        let r3 = Ray {
-            orig: na::Pnt3::new(1.0, 0.0, 0.0),
-            dir: na::Vec3::new(1.0, 0.0, 0.0)
-        };
-        assert!(!tree.cast_ray(&r3).is_some());
-
-        //      |    <-
-        let r4 = Ray {
-            orig: na::Pnt3::new(1.0, 0.0, 0.0),
-            dir: na::Vec3::new(-1.0, 0.0, 0.0)
-        };
-        assert!(!tree.cast_ray(&r4).is_some());
     }
 
     #[test]
     fn bsp_contains_point() { 
-        let tree = simple_plane();
+        let tree = test_tree();
 
-        let p1 = na::Pnt3::new(1.0, 0.0, 0.0);
-        let p2 = na::Pnt3::new(-1.0, 0.0, 0.0);
+        let p1 = na::Pnt3::new(0.5, 0.0, 0.0);
+        let p2 = na::Pnt3::new(1.5, 0.0, 0.0);
         assert!(tree.contains_point(&p1));
         assert!(!tree.contains_point(&p2));
     }
