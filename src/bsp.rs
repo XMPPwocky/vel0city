@@ -137,6 +137,7 @@ impl Tree {
 pub mod cast {
     use na;
 
+    #[derive(Debug)]
     pub struct Ray {
         pub orig: na::Pnt3<f32>,
         pub dir: na::Vec3<f32>
@@ -259,19 +260,23 @@ mod test {
     fn bsp_raycast() { 
         let tree = test_tree();
 
-        //      ->   |  |
         let r1 = Ray {
             orig: na::Pnt3::new(-0.5, 0.0, 0.0),
             dir: na::Vec3::new(1.0, 0.0, 0.0)
         };
         assert_castresult!(tree.cast_ray(&r1), 1.5, na::Vec3::new(1.0, 0.0, 0.0));
 
-        //      <-   |  |
         let r2 = Ray {
             orig: na::Pnt3::new(-0.5, 0.0, 0.0),
             dir: na::Vec3::new(-1.0, 0.0, 0.0)
         };
         assert!(!tree.cast_ray(&r2).is_some());
+
+        let r3 = Ray {
+            orig: na::Pnt3::new(1.1, 1.5, 0.0),
+            dir: na::Vec3::new(0.0, -1.0, 0.0)
+        };
+        assert_castresult!(tree.cast_ray(&r3), 1.5, na::Vec3::new(1.0, 0.0, 0.0));
     }
 
     #[test]
@@ -283,4 +288,26 @@ mod test {
         assert!(tree.contains_point(&p1));
         assert!(!tree.contains_point(&p2));
     }
+
+/*    #[test]
+    fn weird_raytracer() { 
+        let tree = test_tree();
+        for x in (0..80) {
+            let r = Ray {
+                orig: na::Pnt3::new((x - 40) as f32 / 10.0, 1.5, 0.0),
+                dir: na::Vec3::new(0.0, -1.0, 0.0)
+            };
+            if let Some(c) = tree.cast_ray(&r) {
+                if c.toi <= 1.0 {
+                    print!("X");
+                } else {
+                    print!("x");
+                }
+            } else {
+                print!(".");
+            }
+        }
+        println!("");
+        panic!();
+    }*/
 }
