@@ -54,7 +54,6 @@ pub enum Node {
         neg: NodeIndex,
     },
     Leaf {
-        parent: NodeIndex,
         solid: bool,
     }
 }
@@ -116,14 +115,9 @@ impl Tree {
                     self.cast_ray_recursive(ray, first, hack)
                 }
             }
-            Node::Leaf { parent, solid } => {
+            Node::Leaf { solid } => {
                 if solid {
-                    let ref parent = self.nodes[parent];
-                    if let &Node::Inner { ref plane, .. } = parent {
-                        plane.cast_ray(ray).or(hack.map(|c| (*c).clone()))
-                    } else {
-                        unreachable!()
-                    }
+                    hack.map(|c| (*c).clone())
                 } else {
                     None
                 }
@@ -199,7 +193,6 @@ mod test {
                 },
                 Node::Leaf {
                     solid: false,
-                    parent: 0,
                 },
                 Node::Inner {
                     plane: Plane {
@@ -211,7 +204,6 @@ mod test {
                 },
                 Node::Leaf {
                     solid: false,
-                    parent: 2,
                 },
                 Node::Inner {
                     plane: Plane {
@@ -223,11 +215,9 @@ mod test {
                 },
                 Node::Leaf {
                     solid: false,
-                    parent: 4,
                 },
                 Node::Leaf {
                     solid: true,
-                    parent: 4,
                 }
             ],
             root: 0
