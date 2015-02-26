@@ -17,10 +17,11 @@ fn main() {
             let ray = bsp::cast::Ray {
                 orig: na::Pnt3::new(
                           (x - 40) as f32 / 10.0,
-                          1.5,
+                          10.0,
                           (z - 40) as f32 / 10.0,
                           ),
-                dir: na::Vec3::new(0.0, -1.0, 0.0)
+                dir: na::Vec3::new(-0.5, -9.5, 0.0),
+                halfextents: na::Vec3::new(0.5, 0.0, 0.0)
             };
 
             if let Some(c) = tree.cast_ray(&ray) {
