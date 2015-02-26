@@ -15,6 +15,13 @@ fn signcpy(n: f32, from: f32) -> f32 {
     }
 }
 
+#[derive(Copy)]
+enum PlaneTestResult {
+    Front,
+    Back,
+    Span(CastResult)
+}
+
 #[derive(RustcDecodable, RustcEncodable, Debug)]
 pub struct Plane {
     pub norm: na::Vec3<f32>,
@@ -25,7 +32,7 @@ impl Plane {
         (self.norm * self.dist).to_pnt()
     }
 
-    pub fn cast_ray(&self, ray: &Ray) -> Option<CastResult> {
+    fn test_ray(&self, ray: &Ray) -> PlaneTestResult {
         let offset = na::Vec3::new(signcpy(ray.halfextents.x, self.norm.x),
                                    signcpy(ray.halfextents.y, self.norm.y),
                                    signcpy(ray.halfextents.z, self.norm.z));
@@ -35,8 +42,10 @@ impl Plane {
         let startdist = na::dot(&start, &self.norm) - self.dist;
         let enddist = na::dot(&end, &self.norm) - self.dist;
 
-        if (startdist >= 0.0 && enddist >= 0.0) || (startdist < 0.0 && enddist < 0.0) {
-            return None;
+        if startdist >= 0.0 && enddist >= 0.0 {
+            return PlaneTestResult::Front
+        } else if startdist < 0.0 && enddist < 0.0 {
+            return PlaneTestResult::Back;
         };
 
 
@@ -46,16 +55,12 @@ impl Plane {
             enddist / (enddist - startdist)
         };
 
-        if toi >= 0.0 { 
-            Some(
-                CastResult {
-                    toi: toi,
-                    norm: self.norm
-                }
-            ) 
-        } else {
-            None
-        }
+        PlaneTestResult::Span(
+            CastResult {
+                toi: toi,
+                norm: self.norm
+            }
+        ) 
     }
 }
 
@@ -112,28 +117,32 @@ impl Tree {
         match self.nodes[nodeidx] {
             Node::Inner { ref plane, pos, neg, .. } => {
                 let dir = ray.orig - plane.point_on();
-                let (first, last) = if plane.norm.dot(&dir) > 0.0 {
-                    (pos, neg)
-                } else {
-                    (neg, pos)
+
+                let pltest = plane.test_ray(ray);
+                let plcast = match pltest {
+                    PlaneTestResult::Span(c) => Some(c),
+                    _ => None
                 };
 
-                let plcast = plane.cast_ray(ray);
                 let plcast = plcast.as_ref();
 
                 let hack = plcast.or(hack);
 
                 let toi = plcast.map(|cast| cast.toi).unwrap_or(1.0);
-                if toi < 1.0 {
-                    // we might need to go "through" the plane
-                    // check both sides
-                    let (rfirst, rlast) = ray.split(toi);
-                    self.cast_ray_recursive(&rfirst, first, hack) 
-                        .or_else(|| self.cast_ray_recursive(&rlast, last, hack))
-                } else {
-                    let (rfirst, _) = ray.split(toi);
-                    // only need to check one subtree
-                    self.cast_ray_recursive(&rfirst, first, hack)
+                match pltest {
+                    PlaneTestResult::Span(CastResult{toi: toi, ..}) => {
+                        // we might need to go "through" the plane
+                        // check both sides
+                        let (rfirst, rlast) = ray.split(toi);
+                        self.cast_ray_recursive(&rfirst, pos, hack) 
+                            .or_else(|| self.cast_ray_recursive(&rlast, neg, hack))
+                    },
+                    PlaneTestResult::Front => {
+                        self.cast_ray_recursive(&ray, pos, hack)
+                    },
+                    PlaneTestResult::Back => {
+                        self.cast_ray_recursive(&ray, neg, hack)
+                    }
                 }
             }
             Node::Leaf { solid } => {
@@ -175,7 +184,7 @@ pub mod cast {
         }
     }       
 
-    #[derive(Clone,Debug)]
+    #[derive(Copy, Clone,Debug)]
     pub struct CastResult {
         /// Time of impact.
         pub toi: f32,
@@ -262,29 +271,6 @@ mod test {
         }
     }
 
-    #[test]
-    fn plane_raycast() {
-        let plane = Plane {
-            norm: na::Vec3::new(1.0, 0.0, 0.0),
-            dist: 0.0
-        };
-
-        //      ->   |
-        let r1 = Ray {
-            orig: na::Pnt3::new(-1.0, 0.0, 0.0),
-            dir: na::Vec3::new(1.0, 0.0, 0.0),
-            halfextents: na::zero(),
-        };
-        assert!(plane.cast_ray(&r1).is_some());
-
-        //      <-   |
-        let r2 = Ray {
-            orig: na::Pnt3::new(-1.0, 0.0, 0.0),
-            dir: na::Vec3::new(-1.0, 0.0, 0.0),
-            halfextents: na::zero(),
-        };
-        assert!(!plane.cast_ray(&r2).is_some());
-    }
 
     #[test]
     fn bsp_raycast() {
