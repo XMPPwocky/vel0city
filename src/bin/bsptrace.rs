@@ -21,7 +21,7 @@ fn main() {
                           (z - 40) as f32 / 10.0,
                           ),
                 dir: na::Vec3::new(0.0, -9.5, 0.0),
-                halfextents: na::Vec3::new(0.0, 0.0, 0.0)
+                halfextents: na::Vec3::new(0.0, 0.0, 0.5)
             };
 
             if let Some(c) = tree.cast_ray(&ray) {
