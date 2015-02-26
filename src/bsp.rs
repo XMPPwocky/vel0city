@@ -36,8 +36,8 @@ impl Plane {
         let offset = na::Vec3::new(signcpy(ray.halfextents.x, self.norm.x),
                                    signcpy(ray.halfextents.y, self.norm.y),
                                    signcpy(ray.halfextents.z, self.norm.z));
-        let start = ray.orig.to_vec() + offset;
-        let end = ray.orig.to_vec() + ray.dir + offset; 
+        let start = ray.orig.to_vec() - offset;
+        let end = ray.orig.to_vec() + ray.dir - offset; 
 
         let startdist = na::dot(&start, &self.norm) - self.dist;
         let enddist = na::dot(&end, &self.norm) - self.dist;
