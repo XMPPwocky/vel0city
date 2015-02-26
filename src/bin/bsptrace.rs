@@ -20,7 +20,7 @@ fn main() {
                           10.0,
                           (z - 40) as f32 / 10.0,
                           ),
-                dir: na::Vec3::new(-0.5, -9.5, 0.0),
+                dir: na::Vec3::new(0.0, -9.5, 0.0),
                 halfextents: na::Vec3::new(0.5, 0.0, 0.0)
             };
 
