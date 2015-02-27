@@ -57,10 +57,10 @@ impl Plane {
         // Apparently, the line segment spans the plane.
         let absstart = na::abs(&startdist);
         let totaldist = na::abs(&(startdist - enddist));
-        let toi = if absstart <= pad || totaldist == 0 {
+        let toi = if absstart <= pad || totaldist == 0.0 {
             0.0
         } else {
-            (absstart + pad) / totaldist
+            (absstart - pad) / totaldist
         };
 
         PlaneTestResult::Span(
