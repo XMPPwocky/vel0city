@@ -1,4 +1,3 @@
-extern crate vel0city;
-
+#[allow(dead_code)]
 fn main() {
 }
