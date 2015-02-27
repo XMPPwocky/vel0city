@@ -112,13 +112,7 @@ impl Tree {
     }
 
     pub fn cast_ray(&self, ray: &Ray) -> Option<CastResult> {
-        // This check is necessary because the recursive check is "edge-triggered".
-        // In other words, it only considers each plane and the line, and does not check the starting point.
-        if self.contains_point(&ray.orig) {
-            None
-        } else {
-            self.cast_ray_recursive(ray, self.root, CastResult { toi: std::f32::INFINITY, norm: na::zero() })
-        }
+        self.cast_ray_recursive(ray, self.root, CastResult { toi: std::f32::INFINITY, norm: na::zero() })
     }
 
     fn cast_ray_recursive(&self, ray: &Ray, nodeidx: NodeIndex, firstimpact: CastResult)-> Option<CastResult> {
