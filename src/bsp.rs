@@ -89,6 +89,10 @@ pub enum Node {
     }
 }
 
+pub struct PlaneCollisionVisitor {
+    fn visit_plane(&mut self, plane: &Plane, castresult: &CastResult);
+}
+
 #[derive(RustcDecodable, RustcEncodable,Debug)]
 pub struct Tree {
     pub nodes: Vec<Node>,
@@ -117,7 +121,8 @@ impl Tree {
         self.cast_ray_recursive(ray, self.root, CastResult { toi: std::f32::INFINITY, norm: na::zero() })
     }
 
-    fn cast_ray_recursive(&self, ray: &Ray, nodeidx: NodeIndex, firstimpact: CastResult)-> Option<CastResult> {
+    fn cast_ray_recursive<V>(&self, ray: &Ray, nodeidx: NodeIndex, visitor: &mut V)
+    where V: PlaneCollisionVisitor {
         match self.nodes[nodeidx] {
             Node::Inner { ref plane, pos, neg, .. } => {
                 let pltest = plane.test_ray(ray);
@@ -133,12 +138,12 @@ impl Tree {
                     // Does it lie entirely in front?
                     PlaneTestResult::Front => {
                         // Then just check the front subtree.
-                        self.cast_ray_recursive(&ray, pos, firstimpact)
+                        self.cast_ray_recursive(&ray, pos, visitor)
                     },
                     // ... or perhaps it's entirely behind the plane? 
                     PlaneTestResult::Back => {
                         // Then just check the back subtree.
-                        self.cast_ray_recursive(&ray, neg, firstimpact)
+                        self.cast_ray_recursive(&ray, neg, visitor)
                     }
                     // Or does it intersect the plane?
                     PlaneTestResult::Span(CastResult{toi, ..}) => {
