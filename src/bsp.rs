@@ -207,7 +207,7 @@ pub mod cast {
 }
 
 #[cfg(test)]
-mod test {
+pub mod test {
     use na;
     use super::{
         Node,
@@ -240,15 +240,6 @@ mod test {
         }
     }
 
-    macro_rules! assert_approx_eq {
-        ($a: expr, $b: expr) => {
-            if na::approx_eq(&$a, &$b) {
-                ()
-            } else {
-                panic!("{:?} != {:?}", $a, $b);
-            }
-        }
-    }
 
     fn test_tree() -> Tree {
         Tree {

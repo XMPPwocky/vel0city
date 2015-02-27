@@ -1,5 +1,5 @@
 #[derive(Default, Clone)]
 pub struct Settings {
-    pub map: String,
+    pub mapname: String,
     pub maxplayers: u32,
 }
