@@ -345,9 +345,9 @@ mod test {
         let tree = test_tree();
 
         let r1 = Ray {
-            orig: na::Pnt3::new(-1.5, 0.0, 0.0),
+            orig: na::Pnt3::new(-1.0, 0.0, 0.0),
             dir: na::Vec3::new(1.0, 0.0, 0.0),
-            halfextents: na::Vec3::new(0.6, 0.0, 0.0),
+            halfextents: na::Vec3::new(0.5, 0.0, 0.0),
         };
         assert_castresult!(tree.cast_ray(&r1), 0.5, na::Vec3::new(1.0, 0.0, 0.0));
 
