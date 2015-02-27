@@ -73,29 +73,38 @@ impl Plane {
     }
 }
 
-pub type NodeIndex = usize;
+pub type NodeIndex = i32;
 
 #[derive(RustcEncodable, RustcDecodable, Debug)]
-pub enum Node {
-    Inner {
-        plane: Plane,
-        /// Subtree in the same direction as the normal
-        pos: NodeIndex,
-        /// Subtree against the normal
-        neg: NodeIndex,
-    },
-    Leaf {
+pub struct InnerNode {
+    plane: Plane,
+    /// Subtree in the same direction as the normal.
+    /// If this is negative, it's a leaf!
+    pos: NodeIndex,
+    /// Subtree against the normal.
+    /// If this is negative, it's a leaf!
+    neg: NodeIndex,
+}
+
+#[derive(RustcEncodable, RustcDecodable, Debug)]
+pub struct Leaf {
         solid: bool,
+}
+
+impl Leaf {
+    fn is_solid(&self) -> bool {
+        self.solid
     }
 }
 
-pub struct PlaneCollisionVisitor {
+pub trait PlaneCollisionVisitor {
     fn visit_plane(&mut self, plane: &Plane, castresult: &CastResult);
 }
 
 #[derive(RustcDecodable, RustcEncodable,Debug)]
 pub struct Tree {
-    pub nodes: Vec<Node>,
+    pub inodes: Vec<InnerNode>,
+    pub leaves: Vec<Leaf>,
     pub root: NodeIndex
 }
 impl Tree {
@@ -103,74 +112,86 @@ impl Tree {
     pub fn contains_point(&self, point: &na::Pnt3<f32>) -> bool {
         self.contains_point_recursive(point, self.root)
     }
+
     fn contains_point_recursive(&self, point: &na::Pnt3<f32>, nodeidx: NodeIndex) -> bool {
-        match self.nodes[nodeidx] {
-            Node::Inner { ref plane, pos, neg } => {
-                let dir = *point - plane.point_on(); 
-                if na::dot(&dir, &plane.norm) > 0.0 {
-                    self.contains_point_recursive(point, pos)
-                } else {
-                    self.contains_point_recursive(point, neg)
-                }
+        let InnerNode { ref plane, pos, neg } = self.nodes[nodeidx as usize];
+        
+        let dir = *point - plane.point_on(); 
+        if na::dot(&dir, &plane.norm) > 0.0 {
+            if pos < 0 {
+                self.leaves[(-pos - 1) as usize].solid
+            } else {
+                self.contains_point_recursive(point, pos)
             }
-            Node::Leaf { solid, .. } => solid,
+        } else {
+            if neg < 0 {
+                self.leaves[(-neg - 1) as usize].solid
+            } else {
+                self.contains_point_recursive(point, neg)
+            }
         }
     }
 
     pub fn cast_ray(&self, ray: &Ray) -> Option<CastResult> {
-        self.cast_ray_recursive(ray, self.root, CastResult { toi: std::f32::INFINITY, norm: na::zero() })
+        unimplemented!();
+        //self.cast_ray_recursive(ray, self.root, CastResult { toi: std::f32::INFINITY, norm: na::zero() })
     }
 
-    fn cast_ray_recursive<V>(&self, ray: &Ray, nodeidx: NodeIndex, visitor: &mut V)
+    fn cast_ray_recursive<V>(&self, ray: &Ray, nodeidx: NodeIndex, visitor: &mut V) -> bool
     where V: PlaneCollisionVisitor {
-        match self.nodes[nodeidx] {
-            Node::Inner { ref plane, pos, neg, .. } => {
-                let pltest = plane.test_ray(ray);
+        let InnerNode { ref plane, pos, neg } = self.nodes[nodeidx as usize];
 
-                // Is this plane hit sooner than the previous best?
-                let firstimpact = match pltest {
-                    PlaneTestResult::Span(c) if c.toi < firstimpact.toi => c,
-                    _ => firstimpact 
+        let pltest = plane.test_ray(ray);
+
+        // Is this plane hit sooner than the previous best?
+        let firstimpact = match pltest {
+            PlaneTestResult::Span(c) if c.toi < firstimpact.toi => c,
+            _ => firstimpact 
+        };
+
+        // How does the ray interact with this plane?
+        match pltest {
+            // Does it lie entirely in front?
+            PlaneTestResult::Front => {
+                // Then just check the front subtree.
+                if pos < 0 {
+                    self.leaves[(-pos - 1) as usize].is_solid()
+                } else {
+                    self.cast_ray_recursive(&ray, pos, visitor) 
+                }
+            },
+            // ... or perhaps it's entirely behind the plane? 
+            PlaneTestResult::Back => {
+                // Then just check the back subtree.
+                if neg < 0 {
+                    self.leaves[(-neg - 1) as usize].is_solid()
+                } else {
+                    self.cast_ray_recursive(&ray, neg, visitor) 
+                }
+            }
+            // Or does it intersect the plane?
+            PlaneTestResult::Span(CastResult{toi, ..}) => {
+                // Then we must check both subtrees.
+                // Split the ray into two rays, the part of each ray in each subtree.
+                let (rpos, rneg) = ray.split(toi);
+
+                // Ray::split is along the ray's direction, but we need it along the
+                // plane's normal. If they don't coincide, swap the two sub-rays.
+                let (rfirst, rlast) = if ray.dir.dot(&plane.norm) >= 0.0 {
+                    (rpos, rneg)
+                } else {
+                    (rneg, rpos)
                 };
 
-                // How does the ray interact with this plane?
-                match pltest {
-                    // Does it lie entirely in front?
-                    PlaneTestResult::Front => {
-                        // Then just check the front subtree.
-                        self.cast_ray_recursive(&ray, pos, visitor)
-                    },
-                    // ... or perhaps it's entirely behind the plane? 
-                    PlaneTestResult::Back => {
-                        // Then just check the back subtree.
-                        self.cast_ray_recursive(&ray, neg, visitor)
+                if self.cast_ray_recursive(&rfirst, pos, visitor)
+                    || self.cast_ray_recursive(&rlast, neg, visitor) {
+                        // terrible recursion hack
+                        visitor.visit_plane(&self.plane, &plcast);
+                        true
+                    } else {
+                        false
                     }
-                    // Or does it intersect the plane?
-                    PlaneTestResult::Span(CastResult{toi, ..}) => {
-                        // Then we must check both subtrees.
-                        // Split the ray into two rays, the part of each ray in each subtree.
-                        let (rpos, rneg) = ray.split(toi);
-
-                        // Ray::split is along the ray's direction, but we need it along the
-                        // plane's normal. If they don't coincide, swap the two sub-rays.
-                        let (rfirst, rlast) = if ray.dir.dot(&plane.norm) >= 0.0 {
-                            (rpos, rneg)
-                        } else {
-                            (rneg, rpos)
-                        };
-
-                        self.cast_ray_recursive(&rfirst, pos, firstimpact.clone()) 
-                            .or_else(|| self.cast_ray_recursive(&rlast, neg, firstimpact))
-                    },
-                }
-            }
-            Node::Leaf { solid } => {
-                if solid {
-                    Some(firstimpact)
-                } else {
-                    None
-                }
-            }
+            },
         }
     }
 
