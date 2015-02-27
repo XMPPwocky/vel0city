@@ -1,3 +1,4 @@
+#![feature(io, fs)]
 use vel0city::bsp;
 use std::io::Read;
 use rustc_serialize::json;

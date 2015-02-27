@@ -1,7 +1,6 @@
 #![allow(dead_code, unused_variables)]
 
 use na;
-use na::Dot;
 use self::cast::{
     Ray,
     CastResult
@@ -15,7 +14,7 @@ fn signcpy(n: f32, from: f32) -> f32 {
     }
 }
 
-#[derive(Copy)]
+#[derive(Copy, Debug, PartialEq)]
 enum PlaneTestResult {
     Front,
     Back,
@@ -33,27 +32,23 @@ impl Plane {
     }
 
     fn test_ray(&self, ray: &Ray) -> PlaneTestResult {
-        let offset = na::Vec3::new(signcpy(ray.halfextents.x, self.norm.x),
-                                   signcpy(ray.halfextents.y, self.norm.y),
-                                   signcpy(ray.halfextents.z, self.norm.z));
-        let start = ray.orig.to_vec() - offset;
-        let end = ray.orig.to_vec() + ray.dir - offset; 
+        let pad = na::abs(&(ray.halfextents.x * self.norm.x)) +
+            na::abs(&(ray.halfextents.y * self.norm.y)) + 
+            na::abs(&(ray.halfextents.z * self.norm.z));
+
+        let start = ray.orig.to_vec();
+        let end = ray.orig.to_vec() + ray.dir;
 
         let startdist = na::dot(&start, &self.norm) - self.dist;
         let enddist = na::dot(&end, &self.norm) - self.dist;
 
-        if startdist >= 0.0 && enddist >= 0.0 {
+        if startdist >= pad && enddist >= pad {
             return PlaneTestResult::Front
-        } else if startdist < 0.0 && enddist < 0.0 {
+        } else if startdist < -pad && enddist < -pad {
             return PlaneTestResult::Back;
         };
 
-
-        let toi = if startdist >= 0.0 {
-            startdist / (startdist - enddist)
-        } else {
-            enddist / (enddist - startdist)
-        };
+        let toi = (startdist + pad) / (startdist - enddist);
 
         PlaneTestResult::Span(
             CastResult {
@@ -130,7 +125,7 @@ impl Tree {
 
                 let toi = plcast.map(|cast| cast.toi).unwrap_or(1.0);
                 match pltest {
-                    PlaneTestResult::Span(CastResult{toi: toi, ..}) => {
+                    PlaneTestResult::Span(CastResult{toi, ..}) => {
                         // we might need to go "through" the plane
                         // check both sides
                         let (rfirst, rlast) = ray.split(toi);
@@ -184,7 +179,7 @@ pub mod cast {
         }
     }       
 
-    #[derive(Copy, Clone,Debug)]
+    #[derive(Copy, Clone,Debug, PartialEq)]
     pub struct CastResult {
         /// Time of impact.
         pub toi: f32,
@@ -199,11 +194,12 @@ mod test {
     use super::{
         Node,
         Plane,
-        Tree
+        Tree,
+        PlaneTestResult
+            
     };
     use super::cast::{
         Ray,
-        CastResult
     };
 
     macro_rules! assert_castresult {
@@ -226,6 +222,15 @@ mod test {
         }
     }
 
+    macro_rules! assert_approx_eq {
+        ($a: expr, $b: expr) => {
+            if na::approx_eq(&$a, &$b) {
+                ()
+            } else {
+                panic!("{:?} != {:?}", $a, $b);
+            }
+        }
+    }
 
     fn test_tree() -> Tree {
         Tree {
@@ -271,6 +276,50 @@ mod test {
         }
     }
 
+    #[test]
+    fn plane_raytest() {
+        let plane = Plane {
+            norm: na::Vec3::new(1.0, 0.0, 0.0),
+            dist: 0.0,
+        };
+
+        let result = plane.test_ray(&Ray {
+            orig: na::Pnt3::new(-0.5, 0.0, 0.0),
+            dir: na::Vec3::new(1.0, 0.0, 0.0),
+            halfextents: na::zero(),
+        });
+
+        match result {
+            PlaneTestResult::Span(c) => {
+                assert_approx_eq!(c.toi, 0.5);
+                assert_approx_eq!(c.norm, plane.norm);
+            },
+            x => panic!("{:?}", x)
+        };
+    }
+
+    #[test]
+    fn plane_cubetest() {
+        let plane = Plane {
+            norm: na::Vec3::new(1.0, 0.0, 0.0),
+            dist: 0.0,
+        };
+
+        let result = plane.test_ray(&Ray {
+            orig: na::Pnt3::new(-1.0, 0.0, 0.0),
+            dir: na::Vec3::new(1.0, 0.0, 0.0),
+            halfextents: na::Vec3::new(0.5, 0.0, 0.0),
+        });
+
+        match result {
+            PlaneTestResult::Span(c) => {
+                assert_approx_eq!(c.toi, 0.5);
+                assert_approx_eq!(c.norm, plane.norm);
+            },
+            x => panic!("{:?}", x)
+        };
+    }
+
 
     #[test]
     fn bsp_raycast() {
@@ -298,7 +347,7 @@ mod test {
         let r1 = Ray {
             orig: na::Pnt3::new(-1.5, 0.0, 0.0),
             dir: na::Vec3::new(1.0, 0.0, 0.0),
-            halfextents: na::Vec3::new(1.0, 0.0, 0.0),
+            halfextents: na::Vec3::new(0.6, 0.0, 0.0),
         };
         assert_castresult!(tree.cast_ray(&r1), 0.5, na::Vec3::new(1.0, 0.0, 0.0));
 
