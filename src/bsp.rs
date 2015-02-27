@@ -68,7 +68,7 @@ impl Plane {
                 toi: toi,
                 norm: self.norm
             }
-        ) 
+            ) 
     }
 }
 
@@ -94,6 +94,7 @@ pub struct Tree {
     pub root: NodeIndex
 }
 impl Tree {
+    /// Is this point solid?
     pub fn contains_point(&self, point: &na::Pnt3<f32>) -> bool {
         self.contains_point_recursive(point, self.root)
     }
@@ -118,29 +119,43 @@ impl Tree {
     fn cast_ray_recursive(&self, ray: &Ray, nodeidx: NodeIndex, firstimpact: CastResult)-> Option<CastResult> {
         match self.nodes[nodeidx] {
             Node::Inner { ref plane, pos, neg, .. } => {
-                let dir = ray.orig - plane.point_on();
-
                 let pltest = plane.test_ray(ray);
-                
+
+                // Is this plane hit sooner than the previous best?
                 let firstimpact = match pltest {
                     PlaneTestResult::Span(c) if c.toi < firstimpact.toi => c,
                     _ => firstimpact 
                 };
 
+                // How does the ray interact with this plane?
                 match pltest {
+                    // Does it lie entirely in front?
+                    PlaneTestResult::Front => {
+                        // Then just check the front subtree.
+                        self.cast_ray_recursive(&ray, pos, firstimpact)
+                    },
+                    // ... or perhaps it's entirely behind the plane? 
+                    PlaneTestResult::Back => {
+                        // Then just check the back subtree.
+                        self.cast_ray_recursive(&ray, neg, firstimpact)
+                    }
+                    // Or does it intersect the plane?
                     PlaneTestResult::Span(CastResult{toi, ..}) => {
-                        // we might need to go "through" the plane
-                        // check both sides
-                        let (rfirst, rlast) = ray.split(toi);
+                        // Then we must check both subtrees.
+                        // Split the ray into two rays, the part of each ray in each subtree.
+                        let (rpos, rneg) = ray.split(toi);
+
+                        // Ray::split is along the ray's direction, but we need it along the
+                        // plane's normal. If they don't coincide, swap the two sub-rays.
+                        let (rfirst, rlast) = if ray.dir.dot(plane.norm) >= 0.0 {
+                            (rpos, rneg)
+                        } else {
+                            (rneg, rpos)
+                        };
+
                         self.cast_ray_recursive(&rfirst, pos, firstimpact.clone()) 
                             .or_else(|| self.cast_ray_recursive(&rlast, neg, firstimpact))
                     },
-                    PlaneTestResult::Front => {
-                        self.cast_ray_recursive(&ray, pos, firstimpact)
-                    },
-                    PlaneTestResult::Back => {
-                        self.cast_ray_recursive(&ray, neg, firstimpact)
-                    }
                 }
             }
             Node::Leaf { solid } => {
@@ -149,7 +164,6 @@ impl Tree {
                 } else {
                     None
                 }
-
             }
         }
     }
@@ -159,7 +173,7 @@ impl Tree {
 
 pub mod cast {
     use na;
-    
+
     pub struct Ray {
         pub orig: na::Pnt3<f32>,
         pub dir: na::Vec3<f32>,
@@ -178,7 +192,7 @@ pub mod cast {
                     dir: self.dir * (1.0 - toi),
                     halfextents: self.halfextents
                 }
-                )
+            )
         }
     }       
 
@@ -199,7 +213,7 @@ mod test {
         Plane,
         Tree,
         PlaneTestResult
-            
+
     };
     use super::cast::{
         Ray,
@@ -355,11 +369,11 @@ mod test {
         assert_castresult!(tree.cast_ray(&r1), 0.5, na::Vec3::new(1.0, 0.0, 0.0));
 
         /*let r2 = Ray {
-            orig: na::Pnt3::new(-0.5, 0.0, 0.0),
-            dir: na::Vec3::new(-1.0, 0.0, 0.0),
-            halfextents: na::zero(),
-        };
-        assert!(!tree.cast_ray(&r2).is_some());*/
+          orig: na::Pnt3::new(-0.5, 0.0, 0.0),
+          dir: na::Vec3::new(-1.0, 0.0, 0.0),
+          halfextents: na::zero(),
+          };
+          assert!(!tree.cast_ray(&r2).is_some());*/
     }
 
     #[test]
