@@ -98,6 +98,7 @@ impl Leaf {
 }
 
 pub trait PlaneCollisionVisitor {
+    /// Visit a solid face.
     fn visit_plane(&mut self, plane: &Plane, castresult: &CastResult);
 }
 pub struct JustFirstPlaneVisitor {
@@ -197,9 +198,10 @@ impl Tree {
 
                 if self.cast_ray_recursive(&rfirst, pos, visitor)
                     || self.cast_ray_recursive(&rlast, neg, visitor) {
-                        // this way, the visitor only gets invoked if
-                        // 1. we collided with this plane (wasn't just on one side)
+                        // Invoke the visitor, if: 
+                        // 1. the ray intersects this plane (isn't just on one side) 
                         // 2. there was actually something solid on at least one side of this plane
+                        // In other words, if this plane contains a solid face.
                         visitor.visit_plane(&plane, &cresult);
                         true
                     } else {
