@@ -1,6 +1,7 @@
 #![allow(dead_code, unused_variables)]
 
 use na;
+use std;
 use self::cast::{
     Ray,
     CastResult
@@ -109,11 +110,11 @@ impl Tree {
         if self.contains_point(&ray.orig) {
             None
         } else {
-            self.cast_ray_recursive(ray, self.root, None)
+            self.cast_ray_recursive(ray, self.root, CastResult { toi: std::f32::INFINITY, norm: na::zero() })
         }
     }
 
-    fn cast_ray_recursive(&self, ray: &Ray, nodeidx: NodeIndex, hack: Option<&CastResult>) -> Option<CastResult> {
+    fn cast_ray_recursive(&self, ray: &Ray, nodeidx: NodeIndex, firstimpact: CastResult)-> Option<CastResult> {
         match self.nodes[nodeidx] {
             Node::Inner { ref plane, pos, neg, .. } => {
                 let dir = ray.orig - plane.point_on();
@@ -123,31 +124,30 @@ impl Tree {
                     PlaneTestResult::Span(c) => Some(c),
                     _ => None
                 };
+                let firstimpact = match plcast {
+                    Some(plcast) if plcast.toi < firstimpact.toi => plcast,
+                    _ => firstimpact
+                };
 
-                let plcast = plcast.as_ref();
-
-                let hack = plcast.or(hack);
-
-                let toi = plcast.map(|cast| cast.toi).unwrap_or(1.0);
                 match pltest {
                     PlaneTestResult::Span(CastResult{toi, ..}) => {
                         // we might need to go "through" the plane
                         // check both sides
                         let (rfirst, rlast) = ray.split(toi);
-                        self.cast_ray_recursive(&rfirst, pos, hack) 
-                            .or_else(|| self.cast_ray_recursive(&rlast, neg, hack))
+                        self.cast_ray_recursive(&rfirst, pos, firstimpact.clone()) 
+                            .or_else(|| self.cast_ray_recursive(&rlast, neg, firstimpact))
                     },
                     PlaneTestResult::Front => {
-                        self.cast_ray_recursive(&ray, pos, hack)
+                        self.cast_ray_recursive(&ray, pos, firstimpact)
                     },
                     PlaneTestResult::Back => {
-                        self.cast_ray_recursive(&ray, neg, hack)
+                        self.cast_ray_recursive(&ray, neg, firstimpact)
                     }
                 }
             }
             Node::Leaf { solid } => {
                 if solid {
-                    hack.map(|c| (*c).clone())
+                    Some(firstimpact)
                 } else {
                     None
                 }
