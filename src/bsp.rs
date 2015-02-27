@@ -120,13 +120,10 @@ impl Tree {
                 let dir = ray.orig - plane.point_on();
 
                 let pltest = plane.test_ray(ray);
-                let plcast = match pltest {
-                    PlaneTestResult::Span(c) => Some(c),
-                    _ => None
-                };
-                let firstimpact = match plcast {
-                    Some(plcast) if plcast.toi < firstimpact.toi => plcast,
-                    _ => firstimpact
+                
+                let firstimpact = match pltest {
+                    PlaneTestResult::Span(c) if c.toi < firstimpact.toi => c,
+                    _ => firstimpact 
                 };
 
                 match pltest {
