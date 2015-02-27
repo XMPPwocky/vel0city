@@ -1,6 +1,7 @@
 #![allow(dead_code, unused_variables)]
 
 use na;
+use na::Dot;
 use std;
 use self::cast::{
     Ray,
@@ -147,7 +148,7 @@ impl Tree {
 
                         // Ray::split is along the ray's direction, but we need it along the
                         // plane's normal. If they don't coincide, swap the two sub-rays.
-                        let (rfirst, rlast) = if ray.dir.dot(plane.norm) >= 0.0 {
+                        let (rfirst, rlast) = if ray.dir.dot(&plane.norm) >= 0.0 {
                             (rpos, rneg)
                         } else {
                             (rneg, rpos)
