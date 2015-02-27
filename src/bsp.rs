@@ -17,7 +17,7 @@ fn signcpy(n: f32, from: f32) -> f32 {
 }
 
 #[derive(Copy, Debug, PartialEq)]
-enum PlaneTestResult {
+pub enum PlaneTestResult {
     Front,
     Back,
     Span(CastResult)
@@ -77,18 +77,18 @@ pub type NodeIndex = i32;
 
 #[derive(RustcEncodable, RustcDecodable, Debug)]
 pub struct InnerNode {
-    plane: Plane,
+    pub plane: Plane,
     /// Subtree in the same direction as the normal.
     /// If this is negative, it's a leaf!
-    pos: NodeIndex,
+    pub pos: NodeIndex,
     /// Subtree against the normal.
     /// If this is negative, it's a leaf!
-    neg: NodeIndex,
+    pub neg: NodeIndex,
 }
 
 #[derive(RustcEncodable, RustcDecodable, Debug)]
 pub struct Leaf {
-        solid: bool,
+        pub solid: bool,
 }
 
 impl Leaf {
@@ -99,6 +99,27 @@ impl Leaf {
 
 pub trait PlaneCollisionVisitor {
     fn visit_plane(&mut self, plane: &Plane, castresult: &CastResult);
+}
+pub struct JustFirstPlaneVisitor {
+    best: Option<CastResult>
+}
+impl JustFirstPlaneVisitor {
+    pub fn new() -> JustFirstPlaneVisitor {
+        JustFirstPlaneVisitor {
+            best: None
+        }
+    }
+}
+impl PlaneCollisionVisitor for JustFirstPlaneVisitor {
+    fn visit_plane(&mut self, plane: &Plane, castresult: &CastResult) {
+        if let Some(CastResult { toi: best_toi, .. }) = self.best {
+            if castresult.toi <= best_toi {
+                self.best = Some(*castresult);
+            }
+        } else {
+            self.best = Some(*castresult);
+        }
+    }
 }
 
 #[derive(RustcDecodable, RustcEncodable,Debug)]
@@ -114,7 +135,7 @@ impl Tree {
     }
 
     fn contains_point_recursive(&self, point: &na::Pnt3<f32>, nodeidx: NodeIndex) -> bool {
-        let InnerNode { ref plane, pos, neg } = self.nodes[nodeidx as usize];
+        let InnerNode { ref plane, pos, neg } = self.inodes[nodeidx as usize];
         
         let dir = *point - plane.point_on(); 
         if na::dot(&dir, &plane.norm) > 0.0 {
@@ -133,47 +154,38 @@ impl Tree {
     }
 
     pub fn cast_ray(&self, ray: &Ray) -> Option<CastResult> {
-        unimplemented!();
-        //self.cast_ray_recursive(ray, self.root, CastResult { toi: std::f32::INFINITY, norm: na::zero() })
+        let mut visitor = JustFirstPlaneVisitor::new();
+        self.cast_ray_recursive(ray, self.root, &mut visitor);
+        visitor.best
     }
 
     fn cast_ray_recursive<V>(&self, ray: &Ray, nodeidx: NodeIndex, visitor: &mut V) -> bool
     where V: PlaneCollisionVisitor {
-        let InnerNode { ref plane, pos, neg } = self.nodes[nodeidx as usize];
+        if nodeidx < 0 {
+            return self.leaves[(-nodeidx - 1) as usize].is_solid();
+        }
+
+        let InnerNode { ref plane, pos, neg } = self.inodes[nodeidx as usize];
 
         let pltest = plane.test_ray(ray);
-
-        // Is this plane hit sooner than the previous best?
-        let firstimpact = match pltest {
-            PlaneTestResult::Span(c) if c.toi < firstimpact.toi => c,
-            _ => firstimpact 
-        };
 
         // How does the ray interact with this plane?
         match pltest {
             // Does it lie entirely in front?
             PlaneTestResult::Front => {
                 // Then just check the front subtree.
-                if pos < 0 {
-                    self.leaves[(-pos - 1) as usize].is_solid()
-                } else {
-                    self.cast_ray_recursive(&ray, pos, visitor) 
-                }
+                self.cast_ray_recursive(&ray, pos, visitor) 
             },
             // ... or perhaps it's entirely behind the plane? 
             PlaneTestResult::Back => {
                 // Then just check the back subtree.
-                if neg < 0 {
-                    self.leaves[(-neg - 1) as usize].is_solid()
-                } else {
-                    self.cast_ray_recursive(&ray, neg, visitor) 
-                }
+                self.cast_ray_recursive(&ray, neg, visitor) 
             }
             // Or does it intersect the plane?
-            PlaneTestResult::Span(CastResult{toi, ..}) => {
+            PlaneTestResult::Span(cresult) => {
                 // Then we must check both subtrees.
                 // Split the ray into two rays, the part of each ray in each subtree.
-                let (rpos, rneg) = ray.split(toi);
+                let (rpos, rneg) = ray.split(cresult.toi);
 
                 // Ray::split is along the ray's direction, but we need it along the
                 // plane's normal. If they don't coincide, swap the two sub-rays.
@@ -186,7 +198,7 @@ impl Tree {
                 if self.cast_ray_recursive(&rfirst, pos, visitor)
                     || self.cast_ray_recursive(&rlast, neg, visitor) {
                         // terrible recursion hack
-                        visitor.visit_plane(&self.plane, &plcast);
+                        visitor.visit_plane(&plane, &cresult);
                         true
                     } else {
                         false
@@ -236,7 +248,8 @@ pub mod cast {
 pub mod test {
     use na;
     use super::{
-        Node,
+        InnerNode,
+        Leaf,
         Plane,
         Tree,
         PlaneTestResult
@@ -269,43 +282,35 @@ pub mod test {
 
     fn test_tree() -> Tree {
         Tree {
-            nodes: vec![
-                Node::Inner {
+            inodes: vec![
+                InnerNode {
                     plane: Plane {
                         norm: na::Vec3::new(1.0, 0.0, 0.0),
                         dist: 0.0,
                     },
-                    pos: 2,
-                    neg: 1,
+                    pos: 1,
+                    neg: -2,
                 },
-                Node::Leaf {
-                    solid: false,
-                },
-                Node::Inner {
+                InnerNode {
                     plane: Plane {
                         norm: na::Vec3::new(1.0, 0.0, 0.0),
                         dist: 1.0,
                     },
-                    pos: 3,
-                    neg: 4,
+                    pos: -2,
+                    neg: 2,
                 },
-                Node::Leaf {
-                    solid: false,
-                },
-                Node::Inner {
+                InnerNode {
                     plane: Plane {
                         norm: na::Vec3::new(0.0, 1.0, 0.0),
                         dist: 1.0,
                     },
-                    pos: 5,
-                    neg: 6,
+                    pos: -2,
+                    neg: -1,
                 },
-                Node::Leaf {
-                    solid: false,
-                },
-                Node::Leaf {
-                    solid: true,
-                }
+            ],
+            leaves: vec![
+                Leaf { solid: true },
+                Leaf { solid: false }
             ],
             root: 0
         }
