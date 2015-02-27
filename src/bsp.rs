@@ -197,7 +197,9 @@ impl Tree {
 
                 if self.cast_ray_recursive(&rfirst, pos, visitor)
                     || self.cast_ray_recursive(&rlast, neg, visitor) {
-                        // terrible recursion hack
+                        // this way, the visitor only gets invoked if
+                        // 1. we collided with this plane (wasn't just on one side)
+                        // 2. there was actually something solid on at least one side of this plane
                         visitor.visit_plane(&plane, &cresult);
                         true
                     } else {
