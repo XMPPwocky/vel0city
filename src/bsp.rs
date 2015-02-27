@@ -48,7 +48,12 @@ impl Plane {
             return PlaneTestResult::Back;
         };
 
-        let toi = (startdist + pad) / (startdist - enddist);
+        let totaldist = na::abs(&(startdist - enddist));
+        let toi = if totaldist <= pad { 
+            0.0
+        } else {
+            na::abs(&(startdist + pad)) / totaldist
+        };
 
         PlaneTestResult::Span(
             CastResult {
