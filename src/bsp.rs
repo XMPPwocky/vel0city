@@ -28,32 +28,39 @@ pub struct Plane {
     pub dist: f32
 }
 impl Plane {
+    /// Returns a point that lies on this plane.
     pub fn point_on(&self) -> na::Pnt3<f32> {
         (self.norm * self.dist).to_pnt()
     }
 
+    /// Tests a ray against this plane
     fn test_ray(&self, ray: &Ray) -> PlaneTestResult {
         let pad = na::abs(&(ray.halfextents.x * self.norm.x)) +
             na::abs(&(ray.halfextents.y * self.norm.y)) + 
             na::abs(&(ray.halfextents.z * self.norm.z));
 
+        // Turn the ray into a line segment...
         let start = ray.orig.to_vec();
         let end = ray.orig.to_vec() + ray.dir;
 
+        // Find the distance from each endpoint to the plane...
         let startdist = na::dot(&start, &self.norm) - self.dist;
         let enddist = na::dot(&end, &self.norm) - self.dist;
 
+        // Are they both in front / back?
         if startdist >= pad && enddist >= pad {
             return PlaneTestResult::Front
         } else if startdist < -pad && enddist < -pad {
             return PlaneTestResult::Back;
         };
 
+        // Apparently, the line segment spans the plane.
+        let absstart = na::abs(&startdist);
         let totaldist = na::abs(&(startdist - enddist));
-        let toi = if totaldist <= pad { 
+        let toi = if absstart <= pad || totaldist == 0 {
             0.0
         } else {
-            na::abs(&(startdist + pad)) / totaldist
+            (absstart + pad) / totaldist
         };
 
         PlaneTestResult::Span(
