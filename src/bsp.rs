@@ -26,12 +26,12 @@ pub enum PlaneTestResult {
 #[derive(RustcDecodable, RustcEncodable, Debug)]
 pub struct Plane {
     pub norm: na::Vec3<f32>,
-    pub dist: f32
+    pub d: f32
 }
 impl Plane {
     /// Returns a point that lies on this plane.
     pub fn point_on(&self) -> na::Pnt3<f32> {
-        (self.norm * self.dist).to_pnt()
+        (self.norm * -self.d).to_pnt()
     }
 
     /// Tests a ray against this plane
@@ -45,8 +45,8 @@ impl Plane {
         let end = ray.orig.to_vec() + ray.dir;
 
         // Find the distance from each endpoint to the plane...
-        let startdist = na::dot(&start, &self.norm) - self.dist;
-        let enddist = na::dot(&end, &self.norm) - self.dist;
+        let startdist = na::dot(&start, &self.norm) + self.d;
+        let enddist = na::dot(&end, &self.norm) + self.d;
 
         // Are they both in front / back?
         if startdist >= pad && enddist >= pad {
@@ -64,12 +64,10 @@ impl Plane {
             (absstart - pad) / totaldist
         };
 
-        PlaneTestResult::Span(
-            CastResult {
-                toi: toi,
-                norm: self.norm
-            }
-            ) 
+        PlaneTestResult::Span(CastResult {
+            toi: toi,
+            norm: self.norm,
+        })
     }
 }
 
@@ -294,7 +292,7 @@ pub mod test {
                 InnerNode {
                     plane: Plane {
                         norm: na::Vec3::new(1.0, 0.0, 0.0),
-                        dist: 0.0,
+                        d: 0.0,
                     },
                     pos: 1,
                     neg: -2,
@@ -302,7 +300,7 @@ pub mod test {
                 InnerNode {
                     plane: Plane {
                         norm: na::Vec3::new(1.0, 0.0, 0.0),
-                        dist: 1.0,
+                        d: -1.0,
                     },
                     pos: -2,
                     neg: 2,
@@ -310,7 +308,7 @@ pub mod test {
                 InnerNode {
                     plane: Plane {
                         norm: na::Vec3::new(0.0, 1.0, 0.0),
-                        dist: 1.0,
+                        d: -1.0,
                     },
                     pos: -2,
                     neg: -1,
@@ -328,7 +326,7 @@ pub mod test {
     fn plane_raytest() {
         let plane = Plane {
             norm: na::Vec3::new(1.0, 0.0, 0.0),
-            dist: 0.0,
+            d: 0.0,
         };
 
         let result = plane.test_ray(&Ray {
@@ -350,7 +348,7 @@ pub mod test {
     fn plane_cubetest() {
         let plane = Plane {
             norm: na::Vec3::new(1.0, 0.0, 0.0),
-            dist: 0.0,
+            d: 0.0,
         };
 
         let result = plane.test_ray(&Ray {
@@ -412,13 +410,6 @@ pub mod test {
             halfextents: na::Vec3::new(0.5, 0.0, 0.0),
         };
         assert_castresult!(tree.cast_ray(&r1), 0.5, na::Vec3::new(1.0, 0.0, 0.0));
-
-        /*let r2 = Ray {
-          orig: na::Pnt3::new(-0.5, 0.0, 0.0),
-          dir: na::Vec3::new(-1.0, 0.0, 0.0),
-          halfextents: na::zero(),
-          };
-          assert!(!tree.cast_ray(&r2).is_some());*/
     }
 
     #[test]

@@ -20,7 +20,7 @@ pub mod test {
                     InnerNode {
                         plane: Plane {
                             norm: na::Vec3::new(0.0, 1.0, 0.0),
-                            dist: 0.0
+                            d: 0.0
                         },
                         pos: -1,
                         neg: -2
