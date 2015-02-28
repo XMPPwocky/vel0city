@@ -101,7 +101,8 @@ pub trait PlaneCollisionVisitor {
     /// Visit a solid face.
     fn visit_plane(&mut self, plane: &Plane, castresult: &CastResult);
 }
-pub struct JustFirstPlaneVisitor {
+
+struct JustFirstPlaneVisitor {
     best: Option<CastResult>
 }
 impl JustFirstPlaneVisitor {
@@ -358,6 +359,20 @@ pub mod test {
         match result {
             PlaneTestResult::Span(c) => {
                 assert_approx_eq!(c.toi, 0.5);
+                assert_approx_eq!(c.norm, plane.norm);
+            },
+            x => panic!("{:?}", x)
+        };
+
+        let result = plane.test_ray(&Ray {
+            orig: na::Pnt3::new(0.1, 0.0, 0.0),
+            dir: na::Vec3::new(1.0, 0.0, 0.0),
+            halfextents: na::Vec3::new(0.5, 0.0, 0.0),
+        });
+
+        match result {
+            PlaneTestResult::Span(c) => {
+                assert_approx_eq!(c.toi, 0.0);
                 assert_approx_eq!(c.norm, plane.norm);
             },
             x => panic!("{:?}", x)

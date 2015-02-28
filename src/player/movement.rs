@@ -10,6 +10,7 @@ pub struct MoveInput {
 pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) {
     let pl = &mut game.players[playeridx as usize];
     pl.vel = input.wishvel;
+    pl.vel.y -= game.settings.gravity * dt;
 
     let moveray = bsp::cast::Ray {
         orig: pl.pos,
@@ -44,6 +45,19 @@ mod test {
         };
         move_player(&mut game, 0, &input, 1.0);
         assert_approx_eq!(game.players[0].pos.y, ::player::PLAYER_HALFEXTENTS.y);
+        assert_approx_eq!(game.players[0].vel.y, 0.0); 
+    }
+
+    #[test]
+    fn gravity() {
+        let mut game = ::test::simple_game();
+        game.settings.gravity = 5.0; 
+        game.players[0].pos = na::Pnt3::new(0.0, 10.0, 0.0);
+        let input = MoveInput {
+            wishvel: na::Vec3::new(0.0, 0.0, 0.0)
+        };
+        move_player(&mut game, 0, &input, 1.0);
+        assert_approx_eq!(game.players[0].pos.y, 5.0); 
     }
 }
 

@@ -1,5 +1,5 @@
 #[derive(Default, Clone)]
 pub struct Settings {
-    pub mapname: String,
-    pub maxplayers: u32,
+    /// The acceleration due to gravity.
+    pub gravity: f32
 }
