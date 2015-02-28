@@ -203,6 +203,9 @@ impl Tree {
                         // 1. the ray intersects this plane (isn't just on one side) 
                         // 2. there was actually something solid on at least one side of this plane
                         // In other words, if this plane contains a solid face.
+                        // Note that this happens *after* the recursive call. In other words, we do
+                        // this while going "back up" the call stack, after we know if there's
+                        // solid faces involved.
                         visitor.visit_plane(&plane, &cresult);
                         true
                     } else {
