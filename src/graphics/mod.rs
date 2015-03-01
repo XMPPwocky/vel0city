@@ -30,6 +30,7 @@ pub struct View {
 
 pub fn draw_view(game: &Game,
                  view: &View,
+                 playermodel: &Model,
                  frame: &mut glium::Frame) { 
     for player in &game.players {
         let m2w = na::Iso3 {
@@ -39,12 +40,12 @@ pub fn draw_view(game: &Game,
 
         let uniforms = uniform! { 
             transform: *(view.w2s * m2w).as_array(),
-            color: &player.model.texture
+            color: &playermodel.texture
         };
 
-        frame.draw(&player.model.mesh,
-                   &player.model.indices,
-                   &player.model.program,
+        frame.draw(&playermodel.mesh,
+                   &playermodel.indices,
+                   &playermodel.program,
                    &uniforms,
                    &view.drawparams).unwrap();
     }

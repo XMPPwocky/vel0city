@@ -14,13 +14,10 @@ pub struct Player {
 
     pub halfextents: na::Vec3<f32>,
     pub vel: na::Vec3<f32>,
-
-    pub model: Arc<Model>
 }
 
 #[cfg(test)]
 pub mod test {
-    use graphics::Model;
     use std::sync::Arc;
     use na;
     use super::PLAYER_HALFEXTENTS;
@@ -34,7 +31,6 @@ pub mod test {
 
             halfextents: PLAYER_HALFEXTENTS,
             vel: na::zero(),
-            model: Arc::new(Model)
         }
     }
 }
