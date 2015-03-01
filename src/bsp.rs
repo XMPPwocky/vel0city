@@ -2,7 +2,6 @@
 
 use na;
 use na::Dot;
-use std;
 use self::cast::{
     Ray,
     CastResult

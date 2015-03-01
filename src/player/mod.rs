@@ -10,7 +10,7 @@ const PLAYER_HALFEXTENTS: na::Vec3<f32> = na::Vec3 { x: 0.5, y: 0.5, z: 0.5 };
 pub struct Player {
     pub pos: na::Pnt3<f32>,
     pub eyeheight: f32,
-    pub eyeang: na::Quat<f32>,
+    pub eyeang: na::UnitQuat<f32>,
 
     pub halfextents: na::Vec3<f32>,
     pub vel: na::Vec3<f32>,

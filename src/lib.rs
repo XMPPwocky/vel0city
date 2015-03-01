@@ -1,7 +1,9 @@
 extern crate "nalgebra" as na;
-extern crate "rustc-serialize" as rustc_serialize; 
-extern crate gfx;
-extern crate glfw;
+#[macro_use]
+extern crate glium;
+extern crate glutin;
+extern crate "rustc-serialize" as rustc_serialize;
+extern crate wavefront_obj;
 
 macro_rules! assert_approx_eq {
     ($a: expr, $b: expr) => {

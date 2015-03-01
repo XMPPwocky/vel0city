@@ -3,14 +3,8 @@ name = "vel0city"
 version = "0.0.1"
 build = "build.rs"
 
-[dependencies.obj]
-git = "https://github.com/csherratt/obj"
- 
-[dependencies.gfx]
-git = "http://github.com/gfx-rs/gfx-rs"
-
 [dependencies.nalgebra]
-git = "https://github.com/sebcrozet/nalgebra"
+git = "https://github.com/jpernst/nalgebra"
 
 [dependencies.capnp]
 git = "https://github.com/dwrensha/capnproto-rust"
@@ -18,9 +12,18 @@ git = "https://github.com/dwrensha/capnproto-rust"
 [build-dependencies.capnpc]
 git = "https://github.com/dwrensha/capnpc-rust"
 
-[dependencies.glfw]
-git = "https://github.com/bjz/glfw-rs"
-default-features = false
+[dependencies.wavefront_obj]
+git = "https://github.com/PistonDevelopers/wavefront_obj"
+
+[dependencies.glium]
+git = "https://github.com/tomaka/glium"
+features = ["nalgebra"]
+
+[dependencies.glutin]
+git = "https://github.com/tomaka/glutin"
+
+[dependencies.glium_macros]
+git = "https://github.com/tomaka/glium"
 
 [dependencies]
 rustc-serialize = "*"
