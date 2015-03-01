@@ -18,7 +18,7 @@ implement_vertex!(Vertex, position, texcoords);
 pub struct Model {
     mesh: glium::VertexBuffer<Vertex>,
     indices: glium::IndexBuffer, 
-    program: glium::Program, 
+    program: Arc<glium::Program>, 
     texture: glium::Texture2d,
 }
 
