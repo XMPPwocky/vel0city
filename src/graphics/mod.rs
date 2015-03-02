@@ -11,8 +11,8 @@ pub mod wavefront;
 
 #[derive(Copy)]
 pub struct Vertex {
-    position: [f32; 3], 
-    texcoords: [f32; 2] 
+    pub position: [f32; 3], 
+    pub texcoords: [f32; 2] 
 }
 implement_vertex!(Vertex, position, texcoords);
 
@@ -33,6 +33,21 @@ pub fn draw_view(game: &Game,
                  view: &View,
                  playermodel: &Model,
                  frame: &mut glium::Frame) { 
+    
+    {
+        let uniforms = uniform! { 
+            transform: *(view.w2s).as_array(),
+            color: &game.map.textures[0]
+        };
+
+        frame.draw(&game.map.vertices,
+                   &glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
+                   &game.map.shaders[0],
+                   &uniforms,
+                   &view.drawparams).unwrap()
+    }
+
+     
     for player in &game.players {
         let m2w = na::Iso3 {
             translation: player.pos.to_vec(),

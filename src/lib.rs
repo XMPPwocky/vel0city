@@ -1,3 +1,5 @@
+#![feature(io, fs, path)]
+
 extern crate "nalgebra" as na;
 #[macro_use]
 extern crate glium;
@@ -16,6 +18,7 @@ macro_rules! assert_approx_eq {
     }
 }
 
+pub mod assets;
 pub mod bsp;
 pub mod graphics;
 pub mod map;
