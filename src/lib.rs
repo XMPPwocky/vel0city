@@ -32,10 +32,11 @@ pub struct Game {
 #[cfg(test)]
 pub mod test {
     use super::{map, Game, player, settings};
+    use glium;
 
-    pub fn simple_game() -> Game {
+    pub fn simple_game(display: &glium::Display) -> Game {
         Game {
-            map: map::test::single_plane_map(),
+            map: map::test::single_plane_map(display),
             players: vec![player::test::simple_player()],
             settings: ::std::default::Default::default()
         }
