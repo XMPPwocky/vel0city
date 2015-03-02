@@ -2,6 +2,7 @@ extern crate "nalgebra" as na;
 #[macro_use]
 extern crate glium;
 extern crate glutin;
+extern crate time;
 extern crate "rustc-serialize" as rustc_serialize;
 extern crate wavefront_obj;
 

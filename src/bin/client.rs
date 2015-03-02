@@ -4,6 +4,7 @@ extern crate glium;
 extern crate glutin;
 extern crate vel0city;
 extern crate wavefront_obj;
+extern crate time;
 extern crate "nalgebra" as na;
 
 use std::io::Read;
@@ -66,7 +67,6 @@ impl Client {
 
 fn main() {
     let display = glutin::WindowBuilder::new()
-        .with_vsync()
         .build_glium()
         .unwrap();
     let client = Client::new(&display);
@@ -75,10 +75,10 @@ fn main() {
         drawparams: std::default::Default::default(),
     };
 
-    let game = vel0city::Game {
+    let mut game = vel0city::Game {
         settings: std::default::Default::default(),
         players: vec![vel0city::player::Player {
-            pos: na::Pnt3::new(0.0, 0.0, 5.),
+            pos: na::Pnt3::new(0.0, 10.0, 5.),
             eyeheight: 0.0,
             eyeang: na::UnitQuat::new_with_euler_angles(0.,0.,0.,),
             halfextents: vel0city::player::PLAYER_HALFEXTENTS,
@@ -86,8 +86,16 @@ fn main() {
         }],
         map: vel0city::map::single_plane_map()
     };
+    game.settings.gravity = 9.8;
     
+    let mut lasttime = time::precise_time_ns(); 
     loop {
+        let now = time::precise_time_ns();
+        let frametime_ns = now - lasttime;
+        lasttime = now;
+
+        vel0city::player::movement::move_player(&mut game, 0, &vel0city::player::movement::MoveInput { wishvel: na::Vec3::new(0.0, -1.0, 0.0) }, frametime_ns as f32 / 1.0E9);
+
         let mut target = display.draw();
         target.clear_color(0.0, 0.0, 0.0, 0.0);
         vel0city::graphics::draw_view(&game,
