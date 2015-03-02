@@ -1,13 +1,5 @@
-#![feature(io, fs)]
-use vel0city::bsp;
-use std::io::Read;
-use rustc_serialize::json;
-
-extern crate vel0city;
-extern crate "nalgebra" as na;
-extern crate "rustc-serialize" as rustc_serialize;
-
 fn main() { 
+    /*
     let mut f = std::fs::File::open("testbsp.json").unwrap();
     let mut s = String::new();
     f.read_to_string(&mut s).unwrap();
@@ -38,4 +30,5 @@ fn main() {
         }
         println!("");
     }
+    */
 }

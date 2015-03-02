@@ -19,11 +19,11 @@ pub fn obj_to_model(obj: &wavefront_obj::obj::Object,
 
     let mut triangles = vec![];
     for (v1, v2, v3) in obj.geometry[0].shapes.iter()
-        .map(|shape|
+        .filter_map(|shape|
              if let &Triangle(v1, v2, v3) = shape {
-                 (v1, v2, v3)
+                 Some((v1, v2, v3))
              } else {
-                 panic!("only triangles for now");
+                 None
              }) {
 
             triangles.push(v1.0 as u32);

@@ -1,6 +1,4 @@
-use graphics::Model;
 use na;
-use std::sync::Arc;
 
 pub mod movement;
 
@@ -18,7 +16,6 @@ pub struct Player {
 
 #[cfg(test)]
 pub mod test {
-    use std::sync::Arc;
     use na;
     use super::PLAYER_HALFEXTENTS;
     use super::Player;
@@ -27,7 +24,7 @@ pub mod test {
         Player {
             pos: na::Pnt3::new(0.0, 0.0, 0.0),
             eyeheight: 0.0,
-            eyeang: na::zero(),
+            eyeang: na::UnitQuat::new_with_euler_angles(0.0, 0.0, 0.0),
 
             halfextents: PLAYER_HALFEXTENTS,
             vel: na::zero(),

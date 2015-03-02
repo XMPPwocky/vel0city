@@ -25,12 +25,12 @@ pub enum PlaneTestResult {
 #[derive(RustcDecodable, RustcEncodable, Debug)]
 pub struct Plane {
     pub norm: na::Vec3<f32>,
-    pub d: f32
+    pub dist: f32
 }
 impl Plane {
     /// Returns a point that lies on this plane.
     pub fn point_on(&self) -> na::Pnt3<f32> {
-        (self.norm * -self.d).to_pnt()
+        (self.norm * self.dist).to_pnt()
     }
 
     /// Tests a ray against this plane
@@ -44,8 +44,8 @@ impl Plane {
         let end = ray.orig.to_vec() + ray.dir;
 
         // Find the distance from each endpoint to the plane...
-        let startdist = na::dot(&start, &self.norm) + self.d;
-        let enddist = na::dot(&end, &self.norm) + self.d;
+        let startdist = na::dot(&start, &self.norm) - self.dist;
+        let enddist = na::dot(&end, &self.norm) - self.dist;
 
         // Are they both in front / back?
         if startdist >= pad && enddist >= pad {
@@ -72,7 +72,7 @@ impl Plane {
 
 pub type NodeIndex = i32;
 
-#[derive(RustcEncodable, RustcDecodable, Debug)]
+#[derive(Debug)]
 pub struct InnerNode {
     pub plane: Plane,
     /// Subtree in the same direction as the normal.
@@ -83,9 +83,9 @@ pub struct InnerNode {
     pub neg: NodeIndex,
 }
 
-#[derive(RustcEncodable, RustcDecodable, Debug)]
+#[derive(Debug)]
 pub struct Leaf {
-        pub solid: bool,
+    pub solid: bool,
 }
 
 impl Leaf {
@@ -121,7 +121,8 @@ impl PlaneCollisionVisitor for JustFirstPlaneVisitor {
     }
 }
 
-#[derive(RustcDecodable, RustcEncodable,Debug)]
+
+#[derive(Debug)]
 pub struct Tree {
     pub inodes: Vec<InnerNode>,
     pub leaves: Vec<Leaf>,
@@ -215,6 +216,26 @@ impl Tree {
 
 }
 
+pub fn test_tree() -> Tree {
+    Tree {
+        inodes: vec![
+            InnerNode {
+                plane: Plane {
+                    norm: na::Vec3::new(0.0, 1.0, 0.0),
+                    dist: 0.0,
+                },
+                pos: -2,
+                neg: -1,
+            },
+        ],
+        leaves: vec![
+            Leaf { solid: true },
+            Leaf { solid: false }
+        ],
+        root: 0
+    }
+}
+
 pub mod cast {
     use na;
 
@@ -253,8 +274,7 @@ pub mod cast {
 pub mod test {
     use na;
     use super::{
-        InnerNode,
-        Leaf,
+        test_tree,
         Plane,
         Tree,
         PlaneTestResult
@@ -284,48 +304,11 @@ pub mod test {
         }
     }
 
-
-    fn test_tree() -> Tree {
-        Tree {
-            inodes: vec![
-                InnerNode {
-                    plane: Plane {
-                        norm: na::Vec3::new(1.0, 0.0, 0.0),
-                        d: 0.0,
-                    },
-                    pos: 1,
-                    neg: -2,
-                },
-                InnerNode {
-                    plane: Plane {
-                        norm: na::Vec3::new(1.0, 0.0, 0.0),
-                        d: -1.0,
-                    },
-                    pos: -2,
-                    neg: 2,
-                },
-                InnerNode {
-                    plane: Plane {
-                        norm: na::Vec3::new(0.0, 1.0, 0.0),
-                        d: -1.0,
-                    },
-                    pos: -2,
-                    neg: -1,
-                },
-            ],
-            leaves: vec![
-                Leaf { solid: true },
-                Leaf { solid: false }
-            ],
-            root: 0
-        }
-    }
-
     #[test]
     fn plane_raytest() {
         let plane = Plane {
             norm: na::Vec3::new(1.0, 0.0, 0.0),
-            d: 0.0,
+            dist: 0.0,
         };
 
         let result = plane.test_ray(&Ray {
@@ -347,7 +330,7 @@ pub mod test {
     fn plane_cubetest() {
         let plane = Plane {
             norm: na::Vec3::new(1.0, 0.0, 0.0),
-            d: 0.0,
+            dist: 0.0,
         };
 
         let result = plane.test_ray(&Ray {
@@ -385,15 +368,15 @@ pub mod test {
         let tree = test_tree();
 
         let r1 = Ray {
-            orig: na::Pnt3::new(-0.5, 0.0, 0.0),
-            dir: na::Vec3::new(1.0, 0.0, 0.0),
+            orig: na::Pnt3::new(0.0, 0.5, 0.0), 
+            dir: na::Vec3::new(0.0, -1.0, 0.0),
             halfextents: na::zero(),
         };
-        assert_castresult!(tree.cast_ray(&r1), 0.5, na::Vec3::new(1.0, 0.0, 0.0));
+        assert_castresult!(tree.cast_ray(&r1), 0.5, na::Vec3::new(0.0, 1.0, 0.0));
 
         let r2 = Ray {
-            orig: na::Pnt3::new(-0.5, 0.0, 0.0),
-            dir: na::Vec3::new(-1.0, 0.0, 0.0),
+            orig: na::Pnt3::new(0.0, 0.5, 0.0),
+            dir: na::Vec3::new(0.0, 1.0, 0.0),
             halfextents: na::zero(),
         };
         assert!(!tree.cast_ray(&r2).is_some());
@@ -404,23 +387,11 @@ pub mod test {
         let tree = test_tree();
 
         let r1 = Ray {
-            orig: na::Pnt3::new(-1.0, 0.0, 0.0),
-            dir: na::Vec3::new(1.0, 0.0, 0.0),
-            halfextents: na::Vec3::new(0.5, 0.0, 0.0),
+            orig: na::Pnt3::new(0.0, 1.0, 0.0),
+            dir: na::Vec3::new(0.0, -1.0, 0.0),
+            halfextents: na::Vec3::new(0.0, 0.5, 0.0),
         };
-        assert_castresult!(tree.cast_ray(&r1), 0.5, na::Vec3::new(1.0, 0.0, 0.0));
-    }
-
-    #[test]
-    fn bsp_contains_point() { 
-        let tree = test_tree();
-
-        let p1 = na::Pnt3::new(0.5, 0.0, 0.0);
-        let p2 = na::Pnt3::new(1.5, 0.0, 0.0);
-        let p3 = na::Pnt3::new(0.5, 1.5, 0.0);
-        assert!(tree.contains_point(&p1));
-        assert!(!tree.contains_point(&p2));
-        assert!(!tree.contains_point(&p3));
+        assert_castresult!(tree.cast_ray(&r1), 0.5, na::Vec3::new(0.0, 1.0, 0.0));
     }
 
 }

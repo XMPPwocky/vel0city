@@ -70,8 +70,9 @@ fn main() {
         .build_glium()
         .unwrap();
     let client = Client::new(&display);
+    let (x, y) = display.get_framebuffer_dimensions();
     let view = vel0city::graphics::View {
-        w2s: na::Persp3::new(1024.0/768.0, 90.0, 0.1, 4096.0).to_mat(),
+        w2s: na::Persp3::new(x as f32 / y as f32, 90.0, 0.1, 4096.0).to_mat(),
         drawparams: std::default::Default::default(),
     };
 
