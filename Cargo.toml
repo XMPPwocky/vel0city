@@ -17,10 +17,11 @@ git = "https://github.com/PistonDevelopers/wavefront_obj"
 
 [dependencies.glium]
 git = "https://github.com/tomaka/glium"
-features = ["nalgebra"]
+features = ["nalgebra", "headless"]
 
 [dependencies.glutin]
 git = "https://github.com/tomaka/glutin"
+features = ["window", "headless"]
 
 [dependencies.glium_macros]
 git = "https://github.com/tomaka/glium"

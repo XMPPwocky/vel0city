@@ -1,5 +1,6 @@
 use bsp;
 use glium;
+use graphics;
 use na;
 
 pub struct LeafModel {
@@ -12,7 +13,7 @@ pub struct LeafModel {
 pub struct Map {
     pub bsp: bsp::Tree,
     pub vertices: glium::VertexBuffer<graphics::Vertex>,
-    pub textures: Vec<glium::Texture2D>,
+    pub textures: Vec<glium::Texture2d>,
     pub shaders: Vec<glium::Program>,
     pub leafmodels: Vec<LeafModel>, 
 }

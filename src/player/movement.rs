@@ -34,7 +34,7 @@ fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>) {
 #[cfg(test)]
 mod test {
     use super::*;
-    use graphics::test::stub_display;
+    use graphics::stub_display;
     use na;
 
     #[test]

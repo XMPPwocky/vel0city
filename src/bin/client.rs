@@ -85,7 +85,7 @@ fn main() {
             halfextents: vel0city::player::PLAYER_HALFEXTENTS,
             vel: na::zero()
         }],
-        map: vel0city::map::single_plane_map()
+        map: vel0city::map::single_plane_map(&display)
     };
     game.settings.gravity = 9.8;
     

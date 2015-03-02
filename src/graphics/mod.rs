@@ -52,7 +52,7 @@ pub fn draw_view(game: &Game,
     }
 }
 
-pub fn stub_display() -> Display {
+pub fn stub_display() -> glium::Display {
     use glutin;
     use glium::DisplayBuild;
 
