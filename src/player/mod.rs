@@ -5,7 +5,7 @@ use std::sync::Arc;
 pub mod movement;
 
 // remove this later
-const PLAYER_HALFEXTENTS: na::Vec3<f32> = na::Vec3 { x: 0.5, y: 0.5, z: 0.5 };
+pub const PLAYER_HALFEXTENTS: na::Vec3<f32> = na::Vec3 { x: 0.5, y: 0.5, z: 0.5 };
 
 pub struct Player {
     pub pos: na::Pnt3<f32>,

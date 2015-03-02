@@ -5,6 +5,7 @@ use na::{
     self,
     ToHomogeneous
 };
+use std::sync::Arc;
 
 pub mod wavefront;
 
@@ -24,8 +25,8 @@ pub struct Model {
 
 /// Hard to describe, but you'll know it if you see it.
 pub struct View {
-    w2s: na::Mat4<f32>,
-    drawparams: glium::DrawParameters,
+    pub w2s: na::Mat4<f32>,
+    pub drawparams: glium::DrawParameters,
 }
 
 pub fn draw_view(game: &Game,
