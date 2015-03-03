@@ -171,6 +171,7 @@ impl Tree {
 
     fn cast_ray_recursive<V>(&self, ray: &Ray, nodeidx: NodeIndex, (start, end): (f32, f32), visitor: &mut V) -> bool
     where V: PlaneCollisionVisitor {
+        println!("{} ({} {})", nodeidx, start, end);
         if nodeidx < 0 {
             return self.leaves[(-nodeidx - 1) as usize].is_solid();
         }
@@ -244,7 +245,7 @@ impl Tree {
                 if self.cast_ray_recursive(ray, near, nearbounds, visitor) {
                     hit = true;
                 }
-                if visitor.should_visit_both() {
+                if !hit || visitor.should_visit_both() {
                     if self.cast_ray_recursive(ray, far, farbounds, visitor) {
                         hit = true;
                     }
