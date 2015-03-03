@@ -11,16 +11,19 @@ pub struct LeafModel {
     pub shader: u32,
 }
 
-pub struct Map {
-    pub bsp: bsp::Tree,
+pub struct MapModel {
     pub vertices: glium::VertexBuffer<graphics::Vertex>,
     pub textures: Vec<glium::Texture2d>,
     pub shaders: Vec<glium::Program>,
     pub leafmodels: Vec<LeafModel>, 
 }
 
-pub fn single_plane_map(display: &glium::Display) -> Map {
-    let tex = vec![
+pub struct Map {
+    pub bsp: bsp::Tree,
+}
+
+pub fn single_plane_map() -> Map {
+/*    let tex = vec![
         vec![(0u8, 0u8, 0u8), (0u8, 255u8, 0u8)],
         vec![(0u8, 0u8, 255u8), (0u8, 255u8, 255u8)]
     ];
@@ -45,14 +48,10 @@ pub fn single_plane_map(display: &glium::Display) -> Map {
             position: [0.0, 0.0, -4096.0],
             texcoords: [0.5, 1.0]
         }
-    ];
+    ];*/
 
     Map {
         bsp: ::bsp::test_tree(),
-        vertices: glium::VertexBuffer::new(display, verts),
-        textures: vec![tex],
-        shaders: vec![program],
-        leafmodels: vec![]
     }
 }
 

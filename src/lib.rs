@@ -37,9 +37,9 @@ pub mod test {
     use super::{map, Game, player, settings};
     use glium;
 
-    pub fn simple_game(display: &glium::Display) -> Game {
+    pub fn simple_game() -> Game {
         Game {
-            map: map::test::single_plane_map(display),
+            map: map::test::single_plane_map(),
             players: vec![player::test::simple_player()],
             settings: ::std::default::Default::default()
         }

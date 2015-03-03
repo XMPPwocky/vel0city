@@ -97,6 +97,11 @@ impl Leaf {
 pub trait PlaneCollisionVisitor {
     /// Visit a solid face.
     fn visit_plane(&mut self, plane: &Plane, castresult: &CastResult);
+    
+    /// Recurse down both sides of a split?
+    fn should_visit_both(&self) -> bool {
+        false
+    }
 }
 
 struct JustFirstPlaneVisitor {
@@ -155,60 +160,92 @@ impl Tree {
 
     pub fn cast_ray(&self, ray: &Ray) -> Option<CastResult> {
         let mut visitor = JustFirstPlaneVisitor::new();
-        self.cast_ray_recursive(ray, self.root, &mut visitor);
+        self.cast_ray_recursive(ray, self.root, (0.0, 1.0), &mut visitor);
         visitor.best
     }
 
-    fn cast_ray_recursive<V>(&self, ray: &Ray, nodeidx: NodeIndex, visitor: &mut V) -> bool
+    fn cast_ray_recursive<V>(&self, ray: &Ray, nodeidx: NodeIndex, (start, end): (f32, f32), visitor: &mut V) -> bool
     where V: PlaneCollisionVisitor {
         if nodeidx < 0 {
             return self.leaves[(-nodeidx - 1) as usize].is_solid();
         }
 
         let InnerNode { ref plane, pos, neg } = self.inodes[nodeidx as usize];
+        
+        // does the ray point towards the plane's front?
+        let coincident = ray.dir.dot(&plane.norm) >= 0.0; 
 
         let pltest = plane.test_ray(ray);
+        let pltest = match pltest {
+            PlaneTestResult::Span(CastResult { toi, norm }) => {
+                if toi < start {
+                    if coincident {
+                        PlaneTestResult::Front
+                    } else {
+                        PlaneTestResult::Back
+                    }
+                } else if toi > end {
+                    if coincident {
+                        PlaneTestResult::Back
+                    } else {
+                        PlaneTestResult::Front
+                    }
+                } else {
+                    PlaneTestResult::Span(CastResult { toi: toi, norm: norm })
+                }
+            },
+            other => other
+        };
 
         // How does the ray interact with this plane?
         match pltest {
             // Does it lie entirely in front?
             PlaneTestResult::Front => {
                 // Then just check the front subtree.
-                self.cast_ray_recursive(&ray, pos, visitor) 
+                self.cast_ray_recursive(&ray, pos, (start, end), visitor) 
             },
             // ... or perhaps it's entirely behind the plane? 
             PlaneTestResult::Back => {
                 // Then just check the back subtree.
-                self.cast_ray_recursive(&ray, neg, visitor) 
+                self.cast_ray_recursive(&ray, neg, (start, end), visitor) 
             }
             // Or does it intersect the plane?
             PlaneTestResult::Span(cresult) => {
                 // Then we must check both subtrees.
                 // Split the ray into two rays, the part of each ray in each subtree.
-                let (rpos, rneg) = ray.split(cresult.toi);
+                let mid = cresult.toi;
 
-                // Ray::split is along the ray's direction, but we need it along the
-                // plane's normal. If they don't coincide, swap the two sub-rays.
-                let (rfirst, rlast) = if ray.dir.dot(&plane.norm) >= 0.0 {
-                    (rpos, rneg)
-                } else {
-                    (rneg, rpos)
-                };
-
-                if self.cast_ray_recursive(&rfirst, pos, visitor)
-                    || self.cast_ray_recursive(&rlast, neg, visitor) {
-                        // Invoke the visitor, if: 
-                        // 1. the ray intersects this plane (isn't just on one side) 
-                        // 2. there was actually something solid on at least one side of this plane
-                        // In other words, if this plane contains a solid face.
-                        // Note that this happens *after* the recursive call. In other words, we do
-                        // this while going "back up" the call stack, after we know if there's
-                        // solid faces involved.
-                        visitor.visit_plane(&plane, &cresult);
-                        true
+                let (frontbounds, endbounds) =
+                    if coincident {
+                        ((start, mid), (mid, end))
                     } else {
-                        false
+                        ((mid, end), (start, mid))
+                    };
+
+                // Invoke the visitor, if: 
+                // 1. the ray intersects this plane (isn't just on one side) 
+                // 2. there was actually something solid on at least one side of this plane
+                // In other words, if this plane contains a solid face.
+                // Note that this happens *after* the recursive call. In other words, we do
+                // this while going "back up" the call stack, after we know if there's
+                // solid faces involved.
+                let mut hit = false;
+                if self.cast_ray_recursive(ray, pos, frontbounds, visitor) {
+                    hit = true;
+                    if !visitor.should_visit_both() {
+                        // ew hack
+                        visitor.visit_plane(&plane, &cresult);
+                        return true;
                     }
+                }
+                if self.cast_ray_recursive(ray, neg, endbounds, visitor) {
+                    hit = true;
+                }
+                if hit { 
+                    visitor.visit_plane(&plane, &cresult);
+                }
+
+                hit
             },
         }
     }
@@ -244,22 +281,6 @@ pub mod cast {
         pub dir: na::Vec3<f32>,
         pub halfextents: na::Vec3<f32>,
     }
-    impl Ray {
-        pub fn split(&self, toi: f32) -> (Ray, Ray) {
-            (
-                Ray {
-                    orig: self.orig,
-                    dir: self.dir * toi,
-                    halfextents: self.halfextents
-                },
-                Ray {
-                    orig: (self.orig.to_vec() + (self.dir * toi)).to_pnt(),
-                    dir: self.dir * (1.0 - toi),
-                    halfextents: self.halfextents
-                }
-            )
-        }
-    }       
 
     #[derive(Copy, Clone,Debug, PartialEq)]
     pub struct CastResult {

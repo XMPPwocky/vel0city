@@ -32,9 +32,10 @@ pub struct View {
 pub fn draw_view(game: &Game,
                  view: &View,
                  playermodel: &Model,
+                 //mapmodel: &map::MapModel,
                  frame: &mut glium::Frame) { 
     
-    {
+    /*{
         let uniforms = uniform! { 
             transform: *(view.w2s).as_array(),
             color: &game.map.textures[0]
@@ -45,7 +46,7 @@ pub fn draw_view(game: &Game,
                    &game.map.shaders[0],
                    &uniforms,
                    &view.drawparams).unwrap()
-    }
+    }*/
 
      
     for player in &game.players {

@@ -34,13 +34,11 @@ fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>) {
 #[cfg(test)]
 mod test {
     use super::*;
-    use graphics::stub_display;
     use na;
 
     #[test]
     fn movement_clipping() {
-        let display = stub_display(); 
-        let mut game = ::test::simple_game(&display);
+        let mut game = ::test::simple_game();
         game.players[0].pos = na::Pnt3::new(0.0, 10.0, 0.0);
         let input = MoveInput {
             wishvel: na::Vec3::new(0.0, -20.0, 0.0)
@@ -52,8 +50,7 @@ mod test {
 
     #[test]
     fn gravity() {
-        let display = stub_display();
-        let mut game = ::test::simple_game(&display);
+        let mut game = ::test::simple_game();
         game.settings.gravity = 5.0; 
         game.players[0].pos = na::Pnt3::new(0.0, 10.0, 0.0);
         let input = MoveInput {
