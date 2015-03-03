@@ -238,22 +238,21 @@ impl Tree {
                 // solid faces involved.
                 // Also note that even if both sides hit something solid, this plane
                 // could still be a face.
+
                 let mut hit = false;
+
                 if self.cast_ray_recursive(ray, near, nearbounds, visitor) {
                     hit = true;
-                    if !visitor.should_visit_both() {
-                        // ew hack
-                        visitor.visit_plane(&plane, &cresult);
-                        return true;
+                }
+                if visitor.should_visit_both() {
+                    if self.cast_ray_recursive(ray, far, farbounds, visitor) {
+                        hit = true;
                     }
                 }
-                if self.cast_ray_recursive(ray, far, farbounds, visitor) {
-                    hit = true;
-                }
-                if hit { 
+
+                if hit {
                     visitor.visit_plane(&plane, &cresult);
                 }
-
                 hit
             },
         }
