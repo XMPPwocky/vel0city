@@ -236,6 +236,8 @@ impl Tree {
                 // Note that this happens *after* the recursive call. In other words, we do
                 // this while going "back up" the call stack, after we know if there's
                 // solid faces involved.
+                // Also note that even if both sides hit something solid, this plane
+                // could still be a face.
                 let mut hit = false;
                 if self.cast_ray_recursive(ray, near, nearbounds, visitor) {
                     hit = true;
