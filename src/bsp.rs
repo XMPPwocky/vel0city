@@ -264,7 +264,7 @@ impl Tree {
 pub fn test_tree() -> Tree {
     use assets;
     let asset = assets::load_bin_asset("test.bsp").unwrap();
-    ::qbsp_import::import_bsp(&asset)
+    ::qbsp_import::import_bsp(&asset).unwrap()
 }
 
 pub mod cast {
