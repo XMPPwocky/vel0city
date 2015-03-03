@@ -29,6 +29,7 @@ git = "https://github.com/tomaka/glium"
 [dependencies]
 rustc-serialize = "*"
 time = "*"
+byteorder = "*"
 
 #[dependencies.ncollide]
 #git = "https://github.com/sebcrozet/ncollide"

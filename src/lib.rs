@@ -1,6 +1,7 @@
 #![feature(io, fs, path)]
 
 extern crate "nalgebra" as na;
+extern crate byteorder;
 #[macro_use]
 extern crate glium;
 extern crate glutin;
@@ -24,6 +25,7 @@ pub mod graphics;
 pub mod map;
 pub mod player;
 pub mod settings;
+pub mod qbsp_import;
 
 pub struct Game {
     pub map: map::Map,

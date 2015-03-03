@@ -22,7 +22,7 @@ pub enum PlaneTestResult {
     Span(CastResult)
 }
 
-#[derive(RustcDecodable, RustcEncodable, Debug)]
+#[derive(RustcDecodable, RustcEncodable, Clone, Debug)]
 pub struct Plane {
     pub norm: na::Vec3<f32>,
     pub dist: f32
@@ -72,7 +72,7 @@ impl Plane {
 
 pub type NodeIndex = i32;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct InnerNode {
     pub plane: Plane,
     /// Subtree in the same direction as the normal.
@@ -171,7 +171,6 @@ impl Tree {
 
     fn cast_ray_recursive<V>(&self, ray: &Ray, nodeidx: NodeIndex, (start, end): (f32, f32), visitor: &mut V) -> bool
     where V: PlaneCollisionVisitor {
-        println!("{} ({} {})", nodeidx, start, end);
         if nodeidx < 0 {
             return self.leaves[(-nodeidx - 1) as usize].is_solid();
         }
@@ -263,23 +262,9 @@ impl Tree {
 }
 
 pub fn test_tree() -> Tree {
-    Tree {
-        inodes: vec![
-            InnerNode {
-                plane: Plane {
-                    norm: na::Vec3::new(0.0, 1.0, 0.0),
-                    dist: 0.0,
-                },
-                pos: -2,
-                neg: -1,
-            },
-        ],
-        leaves: vec![
-            Leaf { solid: true },
-            Leaf { solid: false }
-        ],
-        root: 0
-    }
+    use assets;
+    let asset = assets::load_bin_asset("test.bsp").unwrap();
+    ::qbsp_import::import_bsp(&asset)
 }
 
 pub mod cast {
@@ -306,7 +291,6 @@ pub mod test {
     use super::{
         test_tree,
         Plane,
-        Tree,
         PlaneTestResult
 
     };
