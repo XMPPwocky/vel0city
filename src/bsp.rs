@@ -215,12 +215,14 @@ impl Tree {
                 // Split the ray into two rays, the part of each ray in each subtree.
                 let mid = cresult.toi;
 
-                let (frontbounds, endbounds) =
-                    if coincident {
-                        ((start, mid), (mid, end))
-                    } else {
-                        ((mid, end), (start, mid))
-                    };
+                let (near, far) = if coincident {
+                    (neg, pos) 
+                } else {
+                    (pos, neg)
+                };
+
+                let (nearbounds, farbounds) =
+                    ((start, mid), (mid, end));
 
                 // Invoke the visitor, if: 
                 // 1. the ray intersects this plane (isn't just on one side) 
@@ -230,7 +232,7 @@ impl Tree {
                 // this while going "back up" the call stack, after we know if there's
                 // solid faces involved.
                 let mut hit = false;
-                if self.cast_ray_recursive(ray, pos, frontbounds, visitor) {
+                if self.cast_ray_recursive(ray, near, nearbounds, visitor) {
                     hit = true;
                     if !visitor.should_visit_both() {
                         // ew hack
@@ -238,7 +240,7 @@ impl Tree {
                         return true;
                     }
                 }
-                if self.cast_ray_recursive(ray, neg, endbounds, visitor) {
+                if self.cast_ray_recursive(ray, far, farbounds, visitor) {
                     hit = true;
                 }
                 if hit { 
