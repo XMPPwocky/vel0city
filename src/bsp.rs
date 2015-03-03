@@ -166,7 +166,7 @@ impl Tree {
 
     pub fn cast_ray_visitor<V>(&self, ray: &Ray, visitor: &mut V)
     where V: PlaneCollisionVisitor {
-        self.cast_ray_recursive(ray, self.root, (0.0, 1.0), &mut visitor);
+        self.cast_ray_recursive(ray, self.root, (0.0, 1.0), visitor);
     }
 
     fn cast_ray_recursive<V>(&self, ray: &Ray, nodeidx: NodeIndex, (start, end): (f32, f32), visitor: &mut V) -> bool
