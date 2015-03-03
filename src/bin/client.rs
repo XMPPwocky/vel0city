@@ -42,6 +42,7 @@ impl Client {
     }
 }
 
+#[cfg(not(test))]
 fn main() {
     let display = glutin::WindowBuilder::new()
         .build_glium()
@@ -65,7 +66,8 @@ fn main() {
         }],
         map: vel0city::map::single_plane_map()
     };
-    game.settings.gravity = 9.8;
+    //game.settings.gravity = 9.8;
+    println!("{:?}", game.map.bsp);
     
     let mut lasttime = time::precise_time_ns(); 
     loop {

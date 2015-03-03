@@ -1,4 +1,3 @@
-use assets;
 use bsp;
 use glium;
 use graphics;

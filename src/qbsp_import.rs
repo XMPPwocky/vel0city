@@ -69,7 +69,8 @@ fn read_plane(data: &[u8]) -> byteorder::Result<bsp::Plane> {
     let dist = try!(cursor.read_f32::<LittleEndian>()); 
 
     Ok(bsp::Plane {
-        norm: na::Vec3::new(n_x, n_y, n_z),
+        // y and z swapped
+        norm: na::Vec3::new(n_x, n_z, n_y),
         dist: dist
     })
 }
@@ -101,9 +102,9 @@ fn read_nodes(data: &[u8], planes: &[bsp::Plane]) -> byteorder::Result<Vec<bsp::
 
 fn read_leaves(data: &[u8]) -> byteorder::Result<Vec<bsp::Leaf>> {
     let mut leaves: Vec<_> = data.chunks(30)
-        .map(|_chunk| bsp::Leaf { solid: false }) 
+        .map(|_chunk| bsp::Leaf { solid: true }) 
         .collect();
-    leaves[0].solid = true;
+    leaves[0].solid = false;
     Ok(leaves)
 }
 

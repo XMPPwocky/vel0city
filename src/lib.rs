@@ -36,7 +36,7 @@ pub struct Game {
 
 #[cfg(test)]
 pub mod test {
-    use super::{map, Game, player, settings};
+    use super::{map, Game, player};
     use glium;
 
     pub fn simple_game() -> Game {

@@ -41,7 +41,7 @@ mod test {
         let mut game = ::test::simple_game();
         game.players[0].pos = na::Pnt3::new(0.0, 10.0, 0.0);
         let input = MoveInput {
-            wishvel: na::Vec3::new(0.0, -20.0, 0.0)
+            wishvel: na::Vec3::new(0.0, -200.0, 0.0)
         };
         move_player(&mut game, 0, &input, 1.0);
         assert_approx_eq!(game.players[0].pos.y, ::player::PLAYER_HALFEXTENTS.y);
