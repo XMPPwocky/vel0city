@@ -12,7 +12,7 @@ use vel0city::assets;
 use na::ToHomogeneous;
 
 pub struct Client {
-    playermodel: vel0city::graphics::Model
+    playermodel: vel0city::graphics::Model,
 }
 impl Client {
     fn new(display: &glium::Display) -> Client {
@@ -35,6 +35,7 @@ impl Client {
                                                                       Arc::new(program),
                                                                       tex,
                                                                       display);
+        let s = assets::load_bin_asset("test.bsp").unwrap();
 
         Client {
             playermodel: playermodel,

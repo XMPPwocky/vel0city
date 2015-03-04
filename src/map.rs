@@ -3,18 +3,10 @@ use glium;
 use graphics;
 use graphics::Vertex;
 
-pub struct LeafModel {
-    pub firstvirt: u32,
-    pub lastvirt: u32,
-    pub texture: u32,
-    pub shader: u32,
-}
-
 pub struct MapModel {
     pub vertices: glium::VertexBuffer<graphics::Vertex>,
     pub textures: Vec<glium::Texture2d>,
     pub shaders: Vec<glium::Program>,
-    pub leafmodels: Vec<LeafModel>, 
 }
 
 pub struct Map {

@@ -32,7 +32,6 @@ pub struct View {
 pub fn draw_view(game: &Game,
                  view: &View,
                  playermodel: &Model,
-                 //mapmodel: &map::MapModel,
                  frame: &mut glium::Frame) { 
     
     /*{
