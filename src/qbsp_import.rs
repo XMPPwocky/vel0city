@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#![allow(dead_code, unused_variables)]
 use bsp;
 use byteorder::{self, LittleEndian, ReadBytesExt};
 use std::io::{Cursor, SeekFrom, Seek};
@@ -154,7 +154,7 @@ fn read_model(data: &[u8]) -> byteorder::Result<Model> {
     })
 }
 
-struct Face {
+struct Face;
 
 fn read_face(data: &[u8]) -> byteorder::Result<Face> {
     unimplemented!()

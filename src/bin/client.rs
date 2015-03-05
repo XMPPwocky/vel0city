@@ -35,8 +35,6 @@ impl Client {
                                                                       Arc::new(program),
                                                                       tex,
                                                                       display);
-        let s = assets::load_bin_asset("test.bsp").unwrap();
-
         Client {
             playermodel: playermodel,
         }
