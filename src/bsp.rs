@@ -68,6 +68,7 @@ impl Plane {
             norm: self.norm,
         })
     }
+    
 }
 
 pub type NodeIndex = i32;
@@ -139,6 +140,7 @@ impl Tree {
         self.contains_point_recursive(point, self.root)
     }
 
+    /// Ye Olde Binarye Searche
     fn contains_point_recursive(&self, point: &na::Pnt3<f32>, nodeidx: NodeIndex) -> bool {
         let InnerNode { ref plane, pos, neg } = self.inodes[nodeidx as usize];
         
@@ -158,17 +160,25 @@ impl Tree {
         }
     }
 
+    /// Casts a ray against the tree, returning a CastResult if it hit anything.
     pub fn cast_ray(&self, ray: &Ray) -> Option<CastResult> {
         let mut visitor = JustFirstPlaneVisitor::new();
         self.cast_ray_recursive(ray, self.root, (0.0, 1.0), &mut visitor);
         visitor.best
     }
 
+    /// Casts a ray against the tree, using a custom `PlaneCollisionVisitor`.
+    /// You probably do not need this, unless you need access to a full
+    /// collision manifold.
     pub fn cast_ray_visitor<V>(&self, ray: &Ray, visitor: &mut V)
     where V: PlaneCollisionVisitor {
         self.cast_ray_recursive(ray, self.root, (0.0, 1.0), visitor);
     }
 
+    /// Takes a ray, bounded by [start, end) (from its origin to its direction)
+    /// Tests that against the node nodeidx, and returns true if the ray hit
+    /// the tree (starting at this node) within the bounds. If so, it also
+    /// invokes the PlaneCollisionVisitor `visitor`.
     fn cast_ray_recursive<V>(&self, ray: &Ray, nodeidx: NodeIndex, (start, end): (f32, f32), visitor: &mut V) -> bool
     where V: PlaneCollisionVisitor {
         if nodeidx < 0 {
@@ -270,6 +280,7 @@ pub fn test_tree() -> Tree {
 pub mod cast {
     use na;
 
+    /// Secretly not a ray, it can have thickness to it.
     pub struct Ray {
         pub orig: na::Pnt3<f32>,
         pub dir: na::Vec3<f32>,

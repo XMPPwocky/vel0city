@@ -17,10 +17,10 @@ pub struct Vertex {
 implement_vertex!(Vertex, position, texcoords);
 
 pub struct Model {
-    mesh: glium::VertexBuffer<Vertex>,
-    indices: glium::IndexBuffer, 
-    program: Arc<glium::Program>, 
-    texture: glium::Texture2d,
+    pub mesh: glium::VertexBuffer<Vertex>,
+    pub indices: glium::IndexBuffer, 
+    pub program: Arc<glium::Program>, 
+    pub texture: glium::Texture2d,
 }
 
 /// Hard to describe, but you'll know it if you see it.
@@ -32,6 +32,7 @@ pub struct View {
 pub fn draw_view(game: &Game,
                  view: &View,
                  playermodel: &Model,
+                 mapmodel: &Model,
                  frame: &mut glium::Frame) { 
     
     /*{
@@ -47,6 +48,16 @@ pub fn draw_view(game: &Game,
                    &view.drawparams).unwrap()
     }*/
 
+    let uniforms = uniform! { 
+        transform: *(view.w2s).as_array(),
+        color: &mapmodel.texture
+    };
+
+    frame.draw(&mapmodel.mesh,
+               &mapmodel.indices,
+               &mapmodel.program,
+               &uniforms,
+               &view.drawparams).unwrap();
      
     for player in &game.players {
         let m2w = na::Iso3 {

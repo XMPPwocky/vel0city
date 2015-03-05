@@ -48,9 +48,8 @@ fn main() {
         .unwrap();
     let client = Client::new(&display);
     let (x, y) = display.get_framebuffer_dimensions();
-    let rot = na::Rot3::new(na::Vec3::new(0.01, 0.0, 0.0)).to_homogeneous();
     let view = vel0city::graphics::View {
-        w2s: rot * na::Persp3::new(x as f32 / y as f32, 90.0, 0.1, 4096.0).to_mat(),
+        w2s: na::Persp3::new(x as f32 / y as f32, 90.0, 0.1, 4096.0).to_mat(),
         drawparams: std::default::Default::default(),
     };
 
@@ -66,7 +65,8 @@ fn main() {
         map: vel0city::map::single_plane_map()
     };
     //game.settings.gravity = 9.8;
-    println!("{:?}", game.map.bsp);
+    let asset = assets::load_bin_asset("test.bsp").unwrap();
+    let mapmodel = vel0city::qbsp_import::import_graphics_model(&asset, &display).unwrap();
     
     let mut lasttime = time::precise_time_ns(); 
     loop {
@@ -77,10 +77,11 @@ fn main() {
         vel0city::player::movement::move_player(&mut game, 0, &vel0city::player::movement::MoveInput { wishvel: na::Vec3::new(0.0, -1.0, 0.0) }, frametime_ns as f32 / 1.0E9);
 
         let mut target = display.draw();
-        target.clear_color(0.0, 0.0, 0.5, 0.0);
+        target.clear_color(0.0, 0.0, 0.1, 0.0);
         vel0city::graphics::draw_view(&game,
                                       &view,
                                       &client.playermodel,
+                                      &mapmodel,
                                       &mut target);
         target.finish();
     }
