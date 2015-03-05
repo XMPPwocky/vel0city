@@ -5,6 +5,7 @@ use byteorder::{self, LittleEndian, ReadBytesExt};
 use std::io::{Cursor, SeekFrom, Seek};
 use graphics;
 use glium;
+use image;
 use na;
 
 #[derive(Debug)]
@@ -85,10 +86,8 @@ pub fn import_graphics_model(data: &[u8], display: &glium::Display) -> Result<gr
     println!("{:?}", &indices[0..12]);
     println!("{}", indices.len());
 
-    let tex = vec![
-        vec![(0u8, 0u8, 255u8), (0u8, 255u8, 0u8)],
-        vec![(255u8, 0u8, 0u8), (255u8, 255u8, 255u8)]
-    ];
+    let tex = assets::load_bin_asset("debugtex.png").unwrap();
+    let tex = image::load(tex, image::PNG).unwrap();
     let tex = glium::Texture2d::new(display, tex);
     let program = glium::Program::from_source(
         &display,
