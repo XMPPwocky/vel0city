@@ -1,5 +1,6 @@
 #![feature(io, fs, path)]
 
+#[macro_use]
 extern crate "nalgebra" as na;
 extern crate byteorder;
 #[macro_use]
@@ -8,16 +9,6 @@ extern crate glutin;
 extern crate time;
 extern crate "rustc-serialize" as rustc_serialize;
 extern crate wavefront_obj;
-
-macro_rules! assert_approx_eq {
-    ($a: expr, $b: expr) => {
-        if na::approx_eq(&$a, &$b) {
-            ()
-        } else {
-            panic!("{:?} != {:?}", $a, $b);
-        }
-    }
-}
 
 pub mod assets;
 pub mod bsp;

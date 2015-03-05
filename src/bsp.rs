@@ -287,7 +287,10 @@ pub mod cast {
 
 #[cfg(test)]
 pub mod test {
-    use na;
+    use na::{
+        self,
+        ApproxEq
+    };
     use super::{
         test_tree,
         Plane,

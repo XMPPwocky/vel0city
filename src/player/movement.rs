@@ -34,7 +34,9 @@ fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>) {
 #[cfg(test)]
 mod test {
     use super::*;
-    use na;
+    use na::{self,
+        ApproxEq
+    };
 
     #[test]
     fn movement_clipping() {
