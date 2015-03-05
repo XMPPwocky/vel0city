@@ -14,33 +14,6 @@ pub struct Map {
 }
 
 pub fn single_plane_map() -> Map {
-/*    let tex = vec![
-        vec![(0u8, 0u8, 0u8), (0u8, 255u8, 0u8)],
-        vec![(0u8, 0u8, 255u8), (0u8, 255u8, 255u8)]
-    ];
-    let tex = glium::Texture2d::new(display, tex);
-    let program = glium::Program::from_source(
-        &display,
-        &assets::load_str_asset("vertex.glsl").unwrap(),
-        &assets::load_str_asset("fragment.glsl").unwrap(),
-        None
-        ).unwrap();
-
-    let verts = vec![
-        Vertex {
-            position: [-4096.0, 0.0, 4096.0],
-            texcoords: [0.0, 0.0]
-        },
-        Vertex {
-            position: [4096.0, 0.0, 4096.0],
-            texcoords: [1.0, 0.0]
-        },
-        Vertex {
-            position: [0.0, 0.0, -4096.0],
-            texcoords: [0.5, 1.0]
-        }
-    ];*/
-
     Map {
         bsp: ::bsp::test_tree(),
     }
