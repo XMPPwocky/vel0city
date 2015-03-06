@@ -21,6 +21,31 @@ pub enum PlaneTestResult {
     Back,
     Span(CastResult)
 }
+impl PlaneTestResult {
+    fn clip(self, start: f32, end: f32, coincident: bool) -> PlaneTestResult {
+        use PlaneTestResult::{Front, Back, Span};
+        match self {
+            Span(CastResult { toi, norm }) => {
+                if toi < start {
+                    if coincident {
+                        Front
+                    } else {
+                        Back
+                    }
+                } else if toi > end {
+                    if coincident {
+                        Back
+                    } else {
+                        Front
+                    }
+                } else {
+                    Span(CastResult { toi: toi, norm: norm })
+                }
+            },
+            other => other
+        }
+    }
+}
 
 #[derive(RustcDecodable, RustcEncodable, Clone, Debug)]
 pub struct Plane {
@@ -47,7 +72,7 @@ impl Plane {
         let startdist = na::dot(&start, &self.norm) - self.dist;
         let enddist = na::dot(&end, &self.norm) - self.dist;
 
-        // Are they both in front / back?
+        // Are they bothin front / back?
         if startdist >= pad && enddist >= pad {
             return PlaneTestResult::Front
         } else if startdist < -pad && enddist < -pad {
@@ -190,27 +215,7 @@ impl Tree {
         // does the ray point towards the plane's front?
         let coincident = ray.dir.dot(&plane.norm) >= 0.0; 
 
-        let pltest = plane.test_ray(ray);
-        let pltest = match pltest {
-            PlaneTestResult::Span(CastResult { toi, norm }) => {
-                if toi < start {
-                    if coincident {
-                        PlaneTestResult::Front
-                    } else {
-                        PlaneTestResult::Back
-                    }
-                } else if toi > end {
-                    if coincident {
-                        PlaneTestResult::Back
-                    } else {
-                        PlaneTestResult::Front
-                    }
-                } else {
-                    PlaneTestResult::Span(CastResult { toi: toi, norm: norm })
-                }
-            },
-            other => other
-        };
+        let pltest = plane.test_ray(ray).clip(start, end, coincident);
 
         // How does the ray interact with this plane?
         match pltest {
