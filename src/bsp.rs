@@ -27,6 +27,7 @@ impl PlaneTestResult {
     // in terms of the full ray.
     fn clip(self, start: f32, end: f32, coincident: bool) -> PlaneTestResult {
         use PlaneTestResult::{Front, Back, Span};
+
         match self {
             Span(CastResult { toi, norm }) => {
                 if toi < start {
