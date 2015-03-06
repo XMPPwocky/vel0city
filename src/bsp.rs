@@ -64,6 +64,7 @@ impl Plane {
 
     /// Tests a ray against this plane
     fn test_ray(&self, ray: &Ray) -> PlaneTestResult {
+        // The length of the support vector.
         let pad = na::abs(&(ray.halfextents.x * self.norm.x)) +
             na::abs(&(ray.halfextents.y * self.norm.y)) + 
             na::abs(&(ray.halfextents.z * self.norm.z));
@@ -76,7 +77,7 @@ impl Plane {
         let startdist = na::dot(&start, &self.norm) - self.dist;
         let enddist = na::dot(&end, &self.norm) - self.dist;
 
-        // Are they bothin front / back?
+        // Are they both in front / back?
         if startdist >= pad && enddist >= pad {
             return PlaneTestResult::Front
         } else if startdist < -pad && enddist < -pad {
