@@ -160,6 +160,11 @@ pub struct Tree {
     pub root: NodeIndex
 }
 impl Tree {
+    /// Looks up a leaf by (negative) NodeIndex.
+    fn get_leaf(&self, nodeidx: NodeIndex) -> &Leaf {
+        &self.leaves[(-nodeidx - 1) as usize]
+    }
+
     /// Is this point solid?
     pub fn contains_point(&self, point: &na::Pnt3<f32>) -> bool {
         self.contains_point_recursive(point, self.root)
@@ -172,13 +177,13 @@ impl Tree {
         let dir = *point - plane.point_on(); 
         if na::dot(&dir, &plane.norm) > 0.0 {
             if pos < 0 {
-                self.leaves[(-pos - 1) as usize].solid
+                self.get_leaf(pos).is_solid() 
             } else {
                 self.contains_point_recursive(point, pos)
             }
         } else {
             if neg < 0 {
-                self.leaves[(-neg - 1) as usize].solid
+                self.get_leaf(neg).is_solid() 
             } else {
                 self.contains_point_recursive(point, neg)
             }
@@ -207,7 +212,7 @@ impl Tree {
     fn cast_ray_recursive<V>(&self, ray: &Ray, nodeidx: NodeIndex, (start, end): (f32, f32), visitor: &mut V) -> bool
     where V: PlaneCollisionVisitor {
         if nodeidx < 0 {
-            return self.leaves[(-nodeidx - 1) as usize].is_solid();
+            return self.get_leaf(nodeidx).is_solid();
         }
 
         let InnerNode { ref plane, pos, neg } = self.inodes[nodeidx as usize];
