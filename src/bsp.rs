@@ -22,6 +22,9 @@ pub enum PlaneTestResult {
     Span(CastResult)
 }
 impl PlaneTestResult {
+    // Turns a test with an entire ray into what the result would have been
+    // with a fraction of the ray- with the exception of TOI, which is still
+    // in terms of the full ray.
     fn clip(self, start: f32, end: f32, coincident: bool) -> PlaneTestResult {
         use PlaneTestResult::{Front, Back, Span};
         match self {
