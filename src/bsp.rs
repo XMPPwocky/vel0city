@@ -142,6 +142,8 @@ pub trait PlaneCollisionVisitor {
 }
 
 struct JustFirstPlaneVisitor {
+    /// The first plane hit (as in, least TOI).
+    /// Initially None.
     best: Option<CastResult>
 }
 impl JustFirstPlaneVisitor {
@@ -268,7 +270,10 @@ impl Tree {
                 // this while going "back up" the call stack, after we know if there's
                 // solid faces involved.
                 // Also note that even if both sides hit something solid, this plane
-                // could still be a face.
+                // is still a face.
+                // (Does that still hold if leaves can be distinguished by criteria other than
+                // solid/nonsolid? e.g. if you have two different textures... aha, but you can
+                // never hit an internal face first anyways, so it shouldn't matter in practice) 
 
                 let mut hit = false;
 
@@ -284,6 +289,7 @@ impl Tree {
                 if hit {
                     visitor.visit_plane(&plane, &cresult);
                 }
+
                 hit
             },
         }
@@ -292,6 +298,8 @@ impl Tree {
 
 }
 
+/// Loads a test BSP. The exact contents of this change with the
+/// phase of the moon, but there is guaranteed to be a "floor" at z=0.
 pub fn test_tree() -> Tree {
     use assets;
     let asset = assets::load_bin_asset("test.bsp").unwrap();
@@ -312,7 +320,7 @@ pub mod cast {
     pub struct CastResult {
         /// Time of impact.
         pub toi: f32,
-        /// Normal of what it hit, where it hit.
+        /// Normal of the plane it hit. 
         pub norm: na::Vec3<f32>,
     }
 }
