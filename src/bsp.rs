@@ -88,8 +88,14 @@ impl Plane {
         let absstart = na::abs(&startdist);
         let totaldist = na::abs(&(startdist - enddist));
         let toi = if absstart <= pad || totaldist == 0.0 {
+            // if you started out touching, or if the ray is zero-length,
+            // report a TOI of 0.
+            // The first is reasonable, the second is only there to avoid
+            // a potential division-by-zero.
             0.0
         } else {
+            // I'm honestly not sure how this works, but it appears to, so
+            // don't screw with it.
             (absstart - pad) / totaldist
         };
 
