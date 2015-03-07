@@ -14,6 +14,7 @@ fn main() {
 }
 
 pub fn compile(prefix : Path, files : &[Path]) {
+/*
     let out_dir = Path::new(::std::env::var("OUT_DIR").unwrap());
     let cwd = std::env::current_dir().unwrap();
     std::env::set_current_dir(&out_dir).unwrap();
@@ -35,4 +36,5 @@ pub fn compile(prefix : Path, files : &[Path]) {
     let mut child_stdout = p.stdout.take().unwrap();
     capnpc::codegen::main(&mut child_stdout).unwrap();
     p.wait().unwrap();
+*/
 }

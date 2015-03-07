@@ -72,11 +72,8 @@ fn main() {
     let asset = assets::load_bin_asset("test.bsp").unwrap();
     let mapmodel = vel0city::qbsp_import::import_graphics_model(&asset, &display).unwrap();
     
-    let mut lasttime = time::precise_time_ns(); 
     loop {
-        let now = time::precise_time_ns();
-        let frametime_ns = now - lasttime;
-        lasttime = now;
+        let frametime_ns = 0;
 
         vel0city::player::movement::move_player(&mut game, 0, &vel0city::player::movement::MoveInput { wishvel: na::Vec3::new(0.0, -1.0, 0.0) }, frametime_ns as f32 / 1.0E9);
 

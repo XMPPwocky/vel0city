@@ -26,7 +26,7 @@ impl PlaneTestResult {
     // with a fraction of the ray- with the exception of TOI, which is still
     // in terms of the full ray.
     fn clip(self, start: f32, end: f32, coincident: bool) -> PlaneTestResult {
-        use PlaneTestResult::{Front, Back, Span};
+        use self::PlaneTestResult::{Front, Back, Span};
 
         match self {
             Span(CastResult { toi, norm }) => {

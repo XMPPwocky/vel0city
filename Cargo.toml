@@ -17,7 +17,7 @@ git = "https://github.com/PistonDevelopers/wavefront_obj"
 
 [dependencies.glium]
 git = "https://github.com/tomaka/glium"
-features = ["nalgebra", "headless"]
+features = ["nalgebra", "image", "headless"]
 
 [dependencies.glutin]
 git = "https://github.com/tomaka/glutin"
@@ -26,11 +26,13 @@ features = ["window", "headless"]
 [dependencies.glium_macros]
 git = "https://github.com/tomaka/glium"
 
+[dependencies.image]
+git = "https://github.com/PistonDevelopers/image"
+
 [dependencies]
 rustc-serialize = "*"
 time = "*"
 byteorder = "*"
-image = "*"
 
 #[dependencies.ncollide]
 #git = "https://github.com/sebcrozet/ncollide"

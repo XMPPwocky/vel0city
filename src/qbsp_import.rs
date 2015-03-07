@@ -65,7 +65,7 @@ pub fn import_graphics_model(data: &[u8], display: &glium::Display) -> Result<gr
             position: [average.x, average.z, average.y],
             texcoords: [1.0, 1.0]
         });
-        let center = (verts.len() - 1) as u32;
+        let center = (verts.len() - 1) as i32;
 
         for (id, &vert) in face_verts.iter().enumerate() {
             let vert = &vertices[vert as usize];
@@ -73,21 +73,19 @@ pub fn import_graphics_model(data: &[u8], display: &glium::Display) -> Result<gr
                 position: [vert.x, vert.z, vert.y],
                 texcoords: [0.0, 0.0]
             });
-            let id = id;
+            let id = id as i32;
 
-            let prev = ((id - 1) % face_verts.len()) as u32;
+            let prev = ((id - 1) % face_verts.len() as i32);
 
-            indices.push(center);
-            indices.push(center + prev + 1);
-            indices.push(center + id as u32 + 1);
+            indices.push(center as u32);
+            indices.push((center + prev + 1) as u32);
+            indices.push((center + id + 1) as u32);
         }
 
     }
-    println!("{:?}", &indices[0..12]);
-    println!("{}", indices.len());
 
     let tex = assets::load_bin_asset("debugtex.png").unwrap();
-    let tex = image::load(tex, image::PNG).unwrap();
+    let tex = image::load(::std::old_io::BufReader::new(&tex), image::PNG).unwrap();
     let tex = glium::Texture2d::new(display, tex);
     let program = glium::Program::from_source(
         &display,
