@@ -80,7 +80,7 @@ impl Plane {
         // Are they both in front / back?
         if startdist >= pad && enddist >= pad {
             return PlaneTestResult::Front
-        } else if startdist < -pad && enddist < -pad {
+        } else if startdist <= -pad && enddist <= -pad {
             return PlaneTestResult::Back;
         };
 

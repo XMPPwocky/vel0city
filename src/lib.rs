@@ -7,7 +7,6 @@ extern crate byteorder;
 extern crate glium;
 extern crate glutin;
 extern crate image;
-extern crate time;
 extern crate "rustc-serialize" as rustc_serialize;
 extern crate wavefront_obj;
 

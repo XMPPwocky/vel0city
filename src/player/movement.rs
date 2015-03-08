@@ -1,4 +1,7 @@
 use bsp;
+use bsp::Plane;
+use bsp::PlaneCollisionVisitor;
+use bsp::cast::CastResult;
 use na;
 use Game;
 
@@ -18,17 +21,54 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         halfextents: pl.halfextents
     };
 
-    let cast = game.map.bsp.cast_ray(&moveray);
-    if let Some(bsp::cast::CastResult { toi, norm }) = cast {
+    let mut vis = ClipMoveVisitor { 
+        best: None,
+        pos: pl.pos.to_vec(),
+        vel: pl.vel,
+        curvel: pl.vel
+    };
+
+    game.map.bsp.cast_ray_visitor(&moveray, &mut vis);
+
+    if let Some(bsp::cast::CastResult { toi, .. }) = vis.best {
         pl.pos = pl.pos + (pl.vel * dt * toi);
-        clip_velocity(&mut pl.vel, &norm);
     } else {
         pl.pos = pl.pos + pl.vel * dt;
     }
+    pl.vel = vis.curvel;
 }
 
+struct ClipMoveVisitor {
+    best: Option<CastResult>,
+    pos: na::Vec3<f32>,
+    vel: na::Vec3<f32>,
+    curvel: na::Vec3<f32>,
+}
+impl PlaneCollisionVisitor for ClipMoveVisitor {
+    fn visit_plane(&mut self, plane: &Plane, castresult: &CastResult) {
+        let cnorm = plane.norm * if na::dot(&self.pos, &plane.norm) - plane.dist >= 0.0 {
+            1.0
+        } else {
+            -1.0
+        };
+
+        if let Some(CastResult { toi: best_toi, .. }) = self.best {
+            if na::approx_eq(&castresult.toi, &best_toi) {
+                clip_velocity(&mut self.curvel, &cnorm); 
+            } else if castresult.toi < best_toi {
+                self.best = Some(*castresult);
+                self.curvel = self.vel;
+                clip_velocity(&mut self.curvel, &cnorm); 
+            }
+        } else {
+            self.best = Some(*castresult);
+            self.curvel = self.vel;
+            clip_velocity(&mut self.curvel, &cnorm); 
+        }
+    }
+}
 fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>) {
-    *vel = *vel - na::dot(vel, norm);
+    *vel = *vel - (*norm * na::dot(vel, norm) * 1.01);
 }
 
 #[cfg(test)]

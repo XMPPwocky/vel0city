@@ -31,7 +31,7 @@ git = "https://github.com/PistonDevelopers/image"
 
 [dependencies]
 rustc-serialize = "*"
-time = "*"
+clock_ticks = "*"
 byteorder = "*"
 
 #[dependencies.ncollide]

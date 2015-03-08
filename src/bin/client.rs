@@ -2,12 +2,16 @@ extern crate glium;
 extern crate glutin;
 extern crate vel0city;
 extern crate wavefront_obj;
-extern crate time;
 extern crate "nalgebra" as na;
+extern crate clock_ticks;
 
 use std::sync::Arc;
 use glium::DisplayBuild;
 use glium::Surface;
+use glutin::Event;
+use glutin::ElementState;
+use glutin::VirtualKeyCode;
+
 use vel0city::assets;
 use na::ToHomogeneous;
 
@@ -18,7 +22,7 @@ impl Client {
     fn new(display: &glium::Display) -> Client {
         let tex = vec![
             vec![(0u8, 0u8, 0u8), (0u8, 255u8, 0u8)],
-            vec![(255u8, 0u8, 0u8), (255u8, 255u8, 0u8)]
+            vec![(255u8, 0u8, 0u8), (0, 255u8, 127u8)]
         ];
         let tex = glium::Texture2d::new(display, tex);
         let program = glium::Program::from_source(
@@ -60,7 +64,7 @@ fn main() {
     let mut game = vel0city::Game {
         settings: std::default::Default::default(),
         players: vec![vel0city::player::Player {
-            pos: na::Pnt3::new(0.0, 10.0, 5.),
+            pos: na::Pnt3::new(0.0, 10.0, 7.),
             eyeheight: 0.0,
             eyeang: na::UnitQuat::new_with_euler_angles(0.,0.,0.,),
             halfextents: vel0city::player::PLAYER_HALFEXTENTS,
@@ -72,10 +76,33 @@ fn main() {
     let asset = assets::load_bin_asset("test.bsp").unwrap();
     let mapmodel = vel0city::qbsp_import::import_graphics_model(&asset, &display).unwrap();
     
-    loop {
-        let frametime_ns = 0;
+    let mut mi = vel0city::player::movement::MoveInput { wishvel: na::zero() };
 
-        vel0city::player::movement::move_player(&mut game, 0, &vel0city::player::movement::MoveInput { wishvel: na::Vec3::new(0.0, -1.0, 0.0) }, frametime_ns as f32 / 1.0E9);
+    let mut lasttime = clock_ticks::precise_time_s();
+    while !display.is_closed() {
+        let curtime = clock_ticks::precise_time_s();
+        let frametime = curtime - lasttime;
+        lasttime = curtime;
+        
+        for ev in display.poll_events() {
+            match ev {
+                Event::KeyboardInput(state, _scancode, Some(vkcode)) => {
+                    let mov = match vkcode {
+                        VirtualKeyCode::Up => na::Vec3::new(0.0, 4.0, 0.0),
+                        VirtualKeyCode::Down => na::Vec3::new(0.0, -4.0, 0.0),
+                        VirtualKeyCode::Left => na::Vec3::new(4.0, 0.0, 0.0),
+                        VirtualKeyCode::Right => na::Vec3::new(-4.0, 0.0, 0.0),
+                        _ => na::zero()
+                    };
+                    if state == ElementState::Pressed {
+                        mi.wishvel = mov;
+                    }
+                },
+                _ => ()
+            }
+        }
+
+        vel0city::player::movement::move_player(&mut game, 0, &mi, frametime as f32);
 
         let mut target = display.draw();
         target.clear_color(0.0, 0.0, 0.1, 0.0);
