@@ -23,7 +23,6 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
 
     let mut vis = ClipMoveVisitor { 
         best: None,
-        pos: pl.pos.to_vec(),
         vel: pl.vel,
         curvel: pl.vel
     };
@@ -40,35 +39,28 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
 
 struct ClipMoveVisitor {
     best: Option<CastResult>,
-    pos: na::Vec3<f32>,
     vel: na::Vec3<f32>,
     curvel: na::Vec3<f32>,
 }
 impl PlaneCollisionVisitor for ClipMoveVisitor {
     fn visit_plane(&mut self, plane: &Plane, castresult: &CastResult) {
-        let cnorm = plane.norm * if na::dot(&self.pos, &plane.norm) - plane.dist >= 0.0 {
-            1.0
-        } else {
-            -1.0
-        };
-
         if let Some(CastResult { toi: best_toi, .. }) = self.best {
             if na::approx_eq(&castresult.toi, &best_toi) {
-                clip_velocity(&mut self.curvel, &cnorm); 
+                clip_velocity(&mut self.curvel, &plane.norm); 
             } else if castresult.toi < best_toi {
                 self.best = Some(*castresult);
                 self.curvel = self.vel;
-                clip_velocity(&mut self.curvel, &cnorm); 
+                clip_velocity(&mut self.curvel, &plane.norm); 
             }
         } else {
             self.best = Some(*castresult);
             self.curvel = self.vel;
-            clip_velocity(&mut self.curvel, &cnorm); 
+            clip_velocity(&mut self.curvel, &plane.norm); 
         }
     }
 }
 fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>) {
-    *vel = *vel - (*norm * na::dot(vel, norm) * 1.01);
+    *vel = *vel - (*norm * na::abs(&na::dot(vel, norm)) * 1.01);
 }
 
 #[cfg(test)]
