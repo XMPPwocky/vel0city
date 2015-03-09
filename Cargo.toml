@@ -3,6 +3,12 @@ name = "vel0city"
 version = "0.0.1"
 build = "build.rs"
 
+[profile.release]
+opt-level = 3 
+debug = true 
+rpath = false
+lto = false
+
 [dependencies.nalgebra]
 git = "https://github.com/jpernst/nalgebra"
 

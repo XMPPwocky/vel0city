@@ -72,7 +72,9 @@ fn main() {
         }],
         map: vel0city::map::single_plane_map()
     };
-    //game.settings.gravity = 9.8;
+    game.settings.gravity = 9.8;
+    game.settings.accel = 10.0;
+    game.settings.maxspeed = 8.0; 
     let asset = assets::load_bin_asset("test.bsp").unwrap();
     let mapmodel = vel0city::qbsp_import::import_graphics_model(&asset, &display).unwrap();
     
@@ -106,11 +108,13 @@ fn main() {
 
         let mut target = display.draw();
         target.clear_color(0.0, 0.0, 0.1, 0.0);
+        println!("into draw...");
         vel0city::graphics::draw_view(&game,
                                       &view,
                                       &client.playermodel,
                                       &mapmodel,
                                       &mut target);
+        println!("done draw...");
         target.finish();
     }
         
