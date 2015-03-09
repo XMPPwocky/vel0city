@@ -108,13 +108,11 @@ fn main() {
 
         let mut target = display.draw();
         target.clear_color(0.0, 0.0, 0.1, 0.0);
-        println!("into draw...");
         vel0city::graphics::draw_view(&game,
                                       &view,
                                       &client.playermodel,
                                       &mapmodel,
                                       &mut target);
-        println!("done draw...");
         target.finish();
     }
         

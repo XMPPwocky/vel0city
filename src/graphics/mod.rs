@@ -48,17 +48,16 @@ pub fn draw_view(game: &Game,
                    &view.drawparams).unwrap()
     }*/
 
-/*    let uniforms = uniform! { 
+    let uniforms = uniform! { 
         transform: *(view.w2s).as_array(),
         color: &mapmodel.texture
     };
-    println!("draw map");
 
     frame.draw(&mapmodel.mesh,
                &mapmodel.indices,
                &mapmodel.program,
                &uniforms,
-               &view.drawparams).unwrap();*/
+               &view.drawparams).unwrap();
      
     for player in &game.players {
         let m2w = na::Iso3 {
