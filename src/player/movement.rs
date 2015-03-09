@@ -19,8 +19,8 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
 
         let curspeed = na::dot(&pl.vel, &movedir); 
         let maxdelta = game.settings.accel * dt;
-        let speed = na::clamp((movespeed - curspeed), -maxdelta, maxdelta);
-        pl.vel = pl.vel + (input.wishvel * speed);
+        let addspeed = na::clamp((movespeed - curspeed), -maxdelta, maxdelta);
+        pl.vel = pl.vel + (input.wishvel * addspeed);
     }
 
     let speed = na::norm(&pl.vel);
