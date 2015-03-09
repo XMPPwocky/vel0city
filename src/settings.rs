@@ -6,5 +6,8 @@ pub struct Settings {
     pub accel: f32,
     /// The speed below which players will instantly stop
     pub speedeps: f32,
+    /// A hard speed cap to prevent utter engine breakage.
     pub maxspeed: f32,
+    /// Maximum "normal" player speed.
+    pub maxmovespeed: f32,
 }

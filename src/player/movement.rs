@@ -13,7 +13,7 @@ pub struct MoveInput {
 pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) {
     let pl = &mut game.players[playeridx as usize];
 
-    let movespeed = na::norm(&input.wishvel);
+    let movespeed = na::clamp(na::norm(&input.wishvel), 0.0, game.settings.maxmovespeed);
     if !na::approx_eq(&movespeed, &0.0) { 
         let movedir = na::normalize(&input.wishvel);
 

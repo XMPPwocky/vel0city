@@ -74,7 +74,8 @@ fn main() {
     };
     game.settings.gravity = 9.8;
     game.settings.accel = 10.0;
-    game.settings.maxspeed = 8.0; 
+    game.settings.maxspeed = 100.0; 
+    game.settings.maxmovespeed = 8.0;
     let asset = assets::load_bin_asset("test.bsp").unwrap();
     let mapmodel = vel0city::qbsp_import::import_graphics_model(&asset, &display).unwrap();
     
