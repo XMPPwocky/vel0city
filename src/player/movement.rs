@@ -13,26 +13,24 @@ pub struct MoveInput {
 pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) {
     let pl = &mut game.players[playeridx as usize];
 
-    let movespeed = na::clamp(na::norm(&input.wishvel), 0.0, game.movesettings.movespeed);
-    println!("movespeed {:?}", movespeed);
+    let wishspeed = na::clamp(na::norm(&input.wishvel), 0.0, game.movesettings.movespeed);
     if !na::approx_eq(&movespeed, &0.0) { 
         let movedir = na::normalize(&input.wishvel);
 
         let curspeed = na::dot(&pl.vel, &movedir); 
         let maxdelta = game.movesettings.accel * dt;
-        let addspeed = na::clamp((movespeed - curspeed), -maxdelta, maxdelta);
-        println!("addspeed  {:?}", addspeed);
+        let addspeed = na::clamp((wishspeed - curspeed), -maxdelta, maxdelta);
         pl.vel = pl.vel + (movedir * addspeed);
     }
 
     let speed = na::norm(&pl.vel);
-    if speed < game.movesettings.speedeps {
-        pl.vel = na::zero();
+    let dir = na::normalize(&pl.vel);
+    let mut newspeed = na::clamp(speed - game.movesettings.friction, 0.0, game.settings.maxspeed); 
+    if newspeed < game.movesettings.speedeps {
+        newspeed = na::zero();
     }
-    if speed > game.movesettings.maxspeed {
-        let dir = na::normalize(&pl.vel);
-        pl.vel = dir * game.movesettings.maxspeed;
-    }
+
+    pl.vel = dir * newspeed;
 
     pl.vel.y -= game.movesettings.gravity * dt;
 

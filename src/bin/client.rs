@@ -79,6 +79,8 @@ fn main() {
     game.movesettings.accel = 15.0;
     game.movesettings.maxspeed = 100.0; 
     game.movesettings.movespeed = 6.0;
+    game.movesettings.friction = 5.0;
+
     let asset = assets::load_bin_asset("test.bsp").unwrap();
     let mapmodel = vel0city::qbsp_import::import_graphics_model(&asset, &display).unwrap();
     

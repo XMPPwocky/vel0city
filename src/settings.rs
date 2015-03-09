@@ -12,6 +12,8 @@ pub struct MoveSettings {
     pub maxspeed: f32,
     /// Maximum "normal" player speed.
     pub movespeed: f32,
+    
+    pub friction: f32,
 }
 
 pub struct InputSettings {
