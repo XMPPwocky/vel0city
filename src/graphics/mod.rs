@@ -59,6 +59,7 @@ pub fn draw_view(game: &Game,
                &uniforms,
                &view.drawparams).unwrap();
      
+    /*
     for player in &game.players {
         let m2w = na::Iso3 {
             translation: player.pos.to_vec(),
@@ -75,7 +76,7 @@ pub fn draw_view(game: &Game,
                    &playermodel.program,
                    &uniforms,
                    &view.drawparams).unwrap();
-    }
+    }*/
 }
 
 pub fn stub_display() -> glium::Display {

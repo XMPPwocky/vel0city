@@ -13,10 +13,14 @@ use glutin::ElementState;
 use glutin::VirtualKeyCode;
 
 use vel0city::assets;
-use na::ToHomogeneous;
+use na::{
+    ToHomogeneous,
+    Inv
+};
 
 pub struct Client {
     playermodel: vel0city::graphics::Model,
+    input: vel0city::input::Input,
 }
 impl Client {
     fn new(display: &glium::Display) -> Client {
@@ -39,8 +43,10 @@ impl Client {
                                                                       Arc::new(program),
                                                                       tex,
                                                                       display);
+        let input = vel0city::input::Input::new();
         Client {
             playermodel: playermodel,
+            input: input,
         }
     }
 }
@@ -50,19 +56,16 @@ fn main() {
     let display = glutin::WindowBuilder::new()
         .build_glium()
         .unwrap();
-    let client = Client::new(&display);
+    let mut client = Client::new(&display);
     let (x, y) = display.get_framebuffer_dimensions();
     let mut drawparams: glium::DrawParameters = std::default::Default::default();
     drawparams.depth_test = glium::DepthTest::IfLess;
     drawparams.depth_write = true;
 
-    let view = vel0city::graphics::View {
-        w2s: na::Persp3::new(x as f32 / y as f32, 90.0, 0.1, 4096.0).to_mat(),
-        drawparams: std::default::Default::default(),
-    };
+    let proj = na::Persp3::new(x as f32 / y as f32, 90.0, 0.1, 4096.0).to_mat();
 
     let mut game = vel0city::Game {
-        settings: std::default::Default::default(),
+        movesettings: std::default::Default::default(),
         players: vec![vel0city::player::Player {
             pos: na::Pnt3::new(0.0, 10.0, 7.),
             eyeheight: 0.0,
@@ -72,15 +75,13 @@ fn main() {
         }],
         map: vel0city::map::single_plane_map()
     };
-    game.settings.gravity = 9.8;
-    game.settings.accel = 10.0;
-    game.settings.maxspeed = 100.0; 
-    game.settings.maxmovespeed = 8.0;
+    game.movesettings.gravity = 9.8;
+    game.movesettings.accel = 15.0;
+    game.movesettings.maxspeed = 100.0; 
+    game.movesettings.movespeed = 6.0;
     let asset = assets::load_bin_asset("test.bsp").unwrap();
     let mapmodel = vel0city::qbsp_import::import_graphics_model(&asset, &display).unwrap();
     
-    let mut mi = vel0city::player::movement::MoveInput { wishvel: na::zero() };
-
     let mut lasttime = clock_ticks::precise_time_s();
     while !display.is_closed() {
         let curtime = clock_ticks::precise_time_s();
@@ -88,22 +89,17 @@ fn main() {
         lasttime = curtime;
         
         for ev in display.poll_events() {
-            match ev {
-                Event::KeyboardInput(state, _scancode, Some(vkcode)) => {
-                    let mov = match vkcode {
-                        VirtualKeyCode::Up => na::Vec3::new(0.0, 4.0, 0.0),
-                        VirtualKeyCode::Down => na::Vec3::new(0.0, -4.0, 0.0),
-                        VirtualKeyCode::Left => na::Vec3::new(4.0, 0.0, 0.0),
-                        VirtualKeyCode::Right => na::Vec3::new(-4.0, 0.0, 0.0),
-                        _ => na::zero()
-                    };
-                    if state == ElementState::Pressed {
-                        mi.wishvel = mov;
-                    }
-                },
-                _ => ()
-            }
+            client.input.handle_event(&ev);
         }
+
+        let mut l = na::Iso3::new_with_rotmat(game.players[0].pos.to_vec() * -1.0, client.input.ang.to_rot());
+        //l.inv();
+        let view = vel0city::graphics::View {
+            w2s: proj * l.to_homogeneous(),
+            drawparams: std::default::Default::default(),
+        };
+
+        let mi = client.input.make_moveinput(&game.movesettings);
 
         vel0city::player::movement::move_player(&mut game, 0, &mi, frametime as f32);
 
@@ -115,6 +111,7 @@ fn main() {
                                       &mapmodel,
                                       &mut target);
         target.finish();
+        println!("{:?}", na::norm(&game.players[0].vel));
     }
         
 }

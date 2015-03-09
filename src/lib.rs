@@ -8,11 +8,14 @@ extern crate glium;
 extern crate glutin;
 extern crate image;
 extern crate "rustc-serialize" as rustc_serialize;
+#[macro_use]
+extern crate bitflags;
 extern crate wavefront_obj;
 
 pub mod assets;
 pub mod bsp;
 pub mod graphics;
+pub mod input;
 pub mod map;
 pub mod player;
 pub mod settings;
@@ -22,7 +25,7 @@ pub struct Game {
     pub map: map::Map,
     pub players: Vec<player::Player>,
 
-    pub settings: settings::Settings,
+    pub movesettings: settings::MoveSettings,
 }
 
 #[cfg(test)]

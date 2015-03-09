@@ -13,26 +13,28 @@ pub struct MoveInput {
 pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) {
     let pl = &mut game.players[playeridx as usize];
 
-    let movespeed = na::clamp(na::norm(&input.wishvel), 0.0, game.settings.maxmovespeed);
+    let movespeed = na::clamp(na::norm(&input.wishvel), 0.0, game.movesettings.movespeed);
+    println!("movespeed {:?}", movespeed);
     if !na::approx_eq(&movespeed, &0.0) { 
         let movedir = na::normalize(&input.wishvel);
 
         let curspeed = na::dot(&pl.vel, &movedir); 
-        let maxdelta = game.settings.accel * dt;
+        let maxdelta = game.movesettings.accel * dt;
         let addspeed = na::clamp((movespeed - curspeed), -maxdelta, maxdelta);
-        pl.vel = pl.vel + (input.wishvel * addspeed);
+        println!("addspeed  {:?}", addspeed);
+        pl.vel = pl.vel + (movedir * addspeed);
     }
 
     let speed = na::norm(&pl.vel);
-    if speed < game.settings.speedeps {
+    if speed < game.movesettings.speedeps {
         pl.vel = na::zero();
     }
-    if speed > game.settings.maxspeed {
+    if speed > game.movesettings.maxspeed {
         let dir = na::normalize(&pl.vel);
-        pl.vel = dir * game.settings.maxspeed;
+        pl.vel = dir * game.movesettings.maxspeed;
     }
 
-    pl.vel.y -= game.settings.gravity * dt;
+    pl.vel.y -= game.movesettings.gravity * dt;
 
     let mut dt = dt;
     for _ in 0..3 {
@@ -98,7 +100,7 @@ fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>) -> bool {
     if na::approx_eq(&d, &0.0) {
         false
     } else {
-        *vel = *vel - (*norm * d * 1.01);
+        *vel = *vel - (*norm * d);
         true
     }
 }
@@ -125,7 +127,7 @@ mod test {
     #[test]
     fn gravity() {
         let mut game = ::test::simple_game();
-        game.settings.gravity = 5.0; 
+        game.movesettings.gravity = 5.0; 
         game.players[0].pos = na::Pnt3::new(0.0, 10.0, 0.0);
         let input = MoveInput {
             wishvel: na::Vec3::new(0.0, 0.0, 0.0)

@@ -39,6 +39,4 @@ git = "https://github.com/PistonDevelopers/image"
 rustc-serialize = "*"
 clock_ticks = "*"
 byteorder = "*"
-
-#[dependencies.ncollide]
-#git = "https://github.com/sebcrozet/ncollide"
+bitflags = "*"
