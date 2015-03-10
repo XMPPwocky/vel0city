@@ -95,7 +95,7 @@ fn main() {
         //l.inv();
         let view = vel0city::graphics::View {
             w2s: proj * l * v,
-            drawparams: std::default::Default::default(),
+            drawparams: drawparams, 
         };
 
         let mi = client.input.make_moveinput(&game.movesettings);
@@ -103,7 +103,7 @@ fn main() {
         vel0city::player::movement::move_player(&mut game, 0, &mi, frametime as f32);
 
         let mut target = display.draw();
-        target.clear_color(0.0, 0.0, 0.1, 0.0);
+        target.clear_color_and_depth((0.0, 0.0, 0.1, 0.0), 1.0);
         vel0city::graphics::draw_view(&game,
                                       &view,
                                       &client.playermodel,

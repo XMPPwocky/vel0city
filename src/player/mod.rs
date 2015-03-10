@@ -3,7 +3,7 @@ use na;
 pub mod movement;
 
 // remove this later
-pub const PLAYER_HALFEXTENTS: na::Vec3<f32> = na::Vec3 { x: 1.0, y: 1.0, z: 2.5 };
+pub const PLAYER_HALFEXTENTS: na::Vec3<f32> = na::Vec3 { x: 1.0, y: 2.5, z: 1.0 };
 
 bitflags! {
     flags PlayerFlags: u32 {

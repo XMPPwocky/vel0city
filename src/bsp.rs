@@ -290,7 +290,8 @@ impl Tree {
                     visitor.visit_plane(&plane, &cresult);
                 }
 
-                hit
+                false
+                //hit
             },
         }
     }

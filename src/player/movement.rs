@@ -134,6 +134,7 @@ impl PlaneCollisionVisitor for ClipMoveVisitor {
             }
         }
     }
+    fn should_visit_both(&self) -> bool { true }
 }
 fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>) -> bool {
     let d = na::clamp(na::dot(vel, norm), 0.0, 1.0);
