@@ -251,7 +251,7 @@ fn read_clipnodes(data: &[u8], planes: &[bsp::Plane]) -> byteorder::Result<Vec<b
 }
 
 fn read_leaves(data: &[u8]) -> byteorder::Result<Vec<bsp::Leaf>> {
-    let mut leaves: Vec<_> = data.chunks(30)
+    let mut leaves: Vec<_> = data.chunks(28)
         .map(|_chunk| bsp::Leaf { solid: true }) 
         .collect();
     leaves[0].solid = false;

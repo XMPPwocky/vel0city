@@ -7,6 +7,8 @@ pub struct MoveSettings {
     pub gravity: f32,
     /// How fast players can accelerate
     pub accel: f32,
+    /// How fast players can accelerate in midair
+    pub airaccel: f32,
     /// The speed below which players will instantly stop
     pub speedeps: f32,
     /// A hard speed cap to prevent utter engine breakage.
@@ -21,13 +23,14 @@ pub struct MoveSettings {
 impl std::default::Default for MoveSettings {
     fn default() -> MoveSettings {
         MoveSettings {
-            gravity: 9.8,
-            accel: 25.0,
+            gravity: 22.0,
+            accel: 40.0,
+            airaccel: 100.0,
             speedeps: 0.0,
-            maxspeed: 100.0,
+            maxspeed: 1000.0,
             movespeed: 10.0,
             jumpspeed: 16.0,
-            friction: 5.0
+            friction: 30.0
         }
     }
 }

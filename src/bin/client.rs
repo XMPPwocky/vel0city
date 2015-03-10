@@ -8,9 +8,6 @@ extern crate clock_ticks;
 use std::sync::Arc;
 use glium::DisplayBuild;
 use glium::Surface;
-use glutin::Event;
-use glutin::ElementState;
-use glutin::VirtualKeyCode;
 
 use vel0city::assets;
 use na::{
@@ -110,6 +107,8 @@ fn main() {
                                       &mapmodel,
                                       &mut target);
         target.finish();
+        let pv = game.players[0].vel;
+        println!("{}", na::norm(&na::Vec2::new(pv.x, pv.z)));
     }
         
 }

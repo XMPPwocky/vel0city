@@ -19,6 +19,12 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
     {
         let pl = &mut game.players[playeridx as usize];
 
+        let accel = if pl.flags.contains(PLAYER_ONGROUND) {
+            game.movesettings.accel
+        } else {
+            game.movesettings.airaccel
+        };
+
         let friction = if pl.flags.contains(PLAYER_ONGROUND) {
             game.movesettings.friction * dt
         } else {
@@ -31,7 +37,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             let movedir = na::normalize(&input.wishvel);
 
             let curspeed = na::dot(&horizvel, &movedir); 
-            let maxdelta = game.movesettings.accel * dt;
+            let maxdelta = accel * dt;
             let addspeed = na::clamp((wishspeed - curspeed), -maxdelta, maxdelta);
             pl.vel = pl.vel + (movedir * addspeed);
         }
