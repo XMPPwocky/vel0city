@@ -15,14 +15,17 @@ bitflags! {
         const BUTTON_BACK    = 0b00_00_00_10,
         const BUTTON_LEFT    = 0b00_00_01_00,
         const BUTTON_RIGHT   = 0b00_00_10_00,
-        const BUTTON_JUMP    = 0b00_01_00_00
+        const BUTTON_JUMP    = 0b00_01_00_00,
+        const BUTTON_RESET   = 0b00_10_00_00,
     }
 }
 
 pub struct Input {
     ang: na::Vec3<f32>,
     buttons: Buttons,
-    cursorpos: (i32, i32),
+    pub cursorpos: (i32, i32),
+
+    hack: bool,
 
     pub settings: InputSettings
 }
@@ -33,18 +36,21 @@ impl Input {
         Input {
             ang: na::zero(),
             buttons: Buttons::empty(),
-            cursorpos: (0, 0),
+            cursorpos: (400, 400),
+            hack: false,
             settings: InputSettings {
-                sensitivity: 0.01,
+                sensitivity: 0.0033,
                 forwardkey: F,
                 backkey: N,
                 leftkey: Y,
                 rightkey: E,
+                resetkey: Escape,
                 jumpkey: Space
             }
         }
     }
     pub fn handle_event(&mut self,
+                        window: &glutin::Window,
                         event: &glutin::Event) {
         use glutin::Event::{
             MouseMoved,
@@ -75,6 +81,9 @@ impl Input {
                 if vkcode == self.settings.jumpkey { 
                     action(&mut self.buttons, BUTTON_JUMP);
                 }
+                if vkcode == self.settings.resetkey { 
+                    action(&mut self.buttons, BUTTON_RESET);
+                }
             },
             &MouseMoved((absx, absy)) => {
                 use std::f32::consts::{
@@ -82,14 +91,20 @@ impl Input {
                     FRAC_PI_2
                 };
 
-                let (x, y) = (absx - self.cursorpos.0, absy - self.cursorpos.1);
-                self.cursorpos = (absx, absy);
+                if !self.hack {
+                    let (x, y) = (absx - self.cursorpos.0, absy - self.cursorpos.1);
+                    window.set_cursor_position(self.cursorpos.0, self.cursorpos.1).unwrap();
 
-                self.ang.y -= x as f32 * self.settings.sensitivity;
-                self.ang.x += y as f32 * self.settings.sensitivity;
+                    self.ang.y -= x as f32 * self.settings.sensitivity;
+                    self.ang.x += y as f32 * self.settings.sensitivity;
 
-                self.ang.y = (self.ang.y + PI_2) % PI_2;
-                self.ang.x = na::clamp(self.ang.x, -FRAC_PI_2, FRAC_PI_2);
+                    self.ang.y = (self.ang.y + PI_2) % PI_2;
+                    self.ang.x = na::clamp(self.ang.x, -FRAC_PI_2, FRAC_PI_2);
+
+                    self.hack = true;
+                } else {
+                    self.hack = false;
+                }
             },
             _ => ()
         }
@@ -109,6 +124,7 @@ impl Input {
             wvel.x -= movesettings.movespeed;
         }
         let jump = self.buttons.contains(BUTTON_JUMP);
+        let reset = self.buttons.contains(BUTTON_RESET);
 
         let wvel = na::rotate(
             &na::Rot3::new(na::Vec3::new(0.0, self.ang.y, 0.0)),
@@ -117,6 +133,7 @@ impl Input {
         MoveInput {
             wishvel: wvel,
             jump: jump,
+            reset: reset,
         }
     }
     pub fn get_ang(&self) -> na::UnitQuat<f32> {

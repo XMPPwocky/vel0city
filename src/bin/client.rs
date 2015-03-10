@@ -77,14 +77,16 @@ fn main() {
     let asset = assets::load_bin_asset("test.bsp").unwrap();
     let mapmodel = vel0city::qbsp_import::import_graphics_model(&asset, &display).unwrap();
     
+    //display.get_window().unwrap().set_cursor(glutin::MouseCursor::NoneCursor);
     let mut lasttime = clock_ticks::precise_time_s();
     while !display.is_closed() {
         let curtime = clock_ticks::precise_time_s();
         let frametime = curtime - lasttime;
         lasttime = curtime;
         
-        for ev in display.poll_events() {
-            client.input.handle_event(&ev);
+        let win = display.get_window().unwrap();
+        for ev in win.poll_events() {
+            client.input.handle_event(&win, &ev);
         }
 
         let l = na::Iso3::new_with_rotmat(na::zero(), client.input.get_ang().to_rot()).inv().unwrap().to_homogeneous();
@@ -107,8 +109,6 @@ fn main() {
                                       &mapmodel,
                                       &mut target);
         target.finish();
-        let pv = game.players[0].vel;
-        println!("{}", na::norm(&na::Vec2::new(pv.x, pv.z)));
     }
         
 }

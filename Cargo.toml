@@ -32,11 +32,9 @@ features = ["window", "headless"]
 [dependencies.glium_macros]
 git = "https://github.com/tomaka/glium"
 
-[dependencies.image]
-git = "https://github.com/PistonDevelopers/image"
-
 [dependencies]
 rustc-serialize = "*"
 clock_ticks = "*"
 byteorder = "*"
 bitflags = "*"
+image = "*"

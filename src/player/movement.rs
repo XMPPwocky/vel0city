@@ -3,6 +3,7 @@ use bsp::Plane;
 use bsp::PlaneCollisionVisitor;
 use bsp::cast::CastResult;
 use player::{
+    PlayerFlags,
     PLAYER_ONGROUND
 };
 use na;
@@ -13,11 +14,17 @@ pub struct MoveInput {
     pub wishvel: na::Vec3<f32>,
 
     pub jump: bool,
+    pub reset: bool,
 }
 
 pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) {
     {
         let pl = &mut game.players[playeridx as usize];
+        if input.reset {
+            pl.pos = na::Pnt3::new(0.0, 0.0, 0.0);
+            pl.vel = na::zero();
+            pl.flags = PlayerFlags::empty(); 
+        };
 
         let accel = if pl.flags.contains(PLAYER_ONGROUND) {
             game.movesettings.accel
@@ -31,8 +38,14 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             0.0
         };
 
+        let speedcap = if pl.flags.contains(PLAYER_ONGROUND) {
+            game.movesettings.movespeed
+        } else {
+            game.movesettings.airspeed
+        };
+
         let horizvel = na::Vec3::new(pl.vel.x, 0.0, pl.vel.z);
-        let wishspeed = na::clamp(na::norm(&input.wishvel), 0.0, game.movesettings.movespeed);
+        let wishspeed = na::clamp(na::norm(&input.wishvel), 0.0, speedcap);
         if !na::approx_eq(&wishspeed, &0.0) { 
             let movedir = na::normalize(&input.wishvel);
 
@@ -46,6 +59,9 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         if !na::approx_eq(&speed, &0.0) {
             let dir = na::normalize(&pl.vel);
             let removespeed = friction * dt * if speed < game.movesettings.speedeps {
+                // Below this speed, switch from an exponential slowdown to a linear one.
+                // Otherwise, the player will asymptotically approach 0 velocity, but never
+                // completely stop.
                 game.movesettings.speedeps
             } else {
                 speed

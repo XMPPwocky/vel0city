@@ -27,12 +27,12 @@ impl std::default::Default for MoveSettings {
         MoveSettings {
             gravity: 40.0,
             accel: 10.0,
-            airaccel: 5.0,
+            airaccel: 8.0,
             speedeps: 20.0,
             maxspeed: 1000.0,
             movespeed: 30.0,
             airspeed: 10.0,
-            jumpspeed: 60.0,
+            jumpspeed: 30.0,
             friction: 2.5, 
         }
     }
@@ -46,5 +46,6 @@ pub struct InputSettings {
     pub leftkey: VirtualKeyCode,
     pub rightkey: VirtualKeyCode,
     pub jumpkey: VirtualKeyCode,
+    pub resetkey: VirtualKeyCode,
 }
 
