@@ -50,7 +50,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         pl.vel.y -= game.movesettings.gravity * dt;
 
         if input.jump && pl.flags.contains(PLAYER_ONGROUND) {
-            pl.vel.y += game.movesettings.jumpspeed;
+            pl.vel.y = game.movesettings.jumpspeed;
             pl.flags.remove(PLAYER_ONGROUND);
         }
 
