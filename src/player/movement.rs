@@ -26,7 +26,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         };
 
         let friction = if pl.flags.contains(PLAYER_ONGROUND) {
-            game.movesettings.friction * dt
+            game.movesettings.friction 
         } else {
             0.0
         };
@@ -37,7 +37,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             let movedir = na::normalize(&input.wishvel);
 
             let curspeed = na::dot(&horizvel, &movedir); 
-            let maxdelta = accel * dt;
+            let maxdelta = accel * wishspeed * dt;
             let addspeed = na::clamp((wishspeed - curspeed), -maxdelta, maxdelta);
             pl.vel = pl.vel + (movedir * addspeed);
         }
@@ -45,10 +45,13 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         let speed = na::norm(&pl.vel);
         if !na::approx_eq(&speed, &0.0) {
             let dir = na::normalize(&pl.vel);
-            let mut newspeed = na::clamp(speed - friction, 0.0, game.movesettings.maxspeed); 
-            if newspeed < game.movesettings.speedeps {
-                newspeed = na::zero();
-            }
+            let removespeed = friction * dt * if speed < game.movesettings.speedeps {
+                game.movesettings.speedeps
+            } else {
+                speed
+            };
+
+            let newspeed = na::clamp(speed - removespeed, 0.0, game.movesettings.maxspeed); 
 
             pl.vel = dir * newspeed;
         }
@@ -82,14 +85,16 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             if let Some(bsp::cast::CastResult { toi, .. }) = vis.best {
                 pl.pos = pl.pos + (pl.vel * dt * toi);
                 dt = dt * (1.0 - toi);
+                if na::approx_eq(&toi, &0.0) {
+                    if vis.hit_floor {
+                        hit_floor = true;
+                    }
+                }
             } else {
                 pl.pos = pl.pos + pl.vel * dt;
                 break;
             }
             pl.vel = vis.curvel;
-            if vis.hit_floor {
-                hit_floor = true;
-            }
         }
         if hit_floor {
             pl.flags.insert(PLAYER_ONGROUND)
@@ -147,7 +152,7 @@ fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>) -> bool {
     if na::approx_eq(&d, &0.0) {
         false
     } else {
-        *vel = *vel - (*norm * d);
+        *vel = *vel - (*norm * d * 1.01);
         true
     }
 }
