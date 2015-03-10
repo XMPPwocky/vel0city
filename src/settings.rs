@@ -1,6 +1,7 @@
 use glutin::VirtualKeyCode;
+use std;
 
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct MoveSettings {
     /// The acceleration due to gravity.
     pub gravity: f32,
@@ -13,7 +14,22 @@ pub struct MoveSettings {
     /// Maximum "normal" player speed.
     pub movespeed: f32,
     
+    pub jumpspeed: f32,
+
     pub friction: f32,
+}
+impl std::default::Default for MoveSettings {
+    fn default() -> MoveSettings {
+        MoveSettings {
+            gravity: 9.8,
+            accel: 25.0,
+            speedeps: 0.0,
+            maxspeed: 100.0,
+            movespeed: 6.0,
+            jumpspeed: 10.0,
+            friction: 5.0
+        }
+    }
 }
 
 pub struct InputSettings {

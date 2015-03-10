@@ -62,7 +62,7 @@ fn main() {
     drawparams.depth_test = glium::DepthTest::IfLess;
     drawparams.depth_write = true;
 
-    let proj = na::Persp3::new(x as f32 / y as f32, 90.0, 0.1, 4096.0).to_mat();
+    let proj = na::Persp3::new(x as f32 / y as f32, 90.0, 0.001, 4096.0).to_mat();
 
     let mut game = vel0city::Game {
         movesettings: std::default::Default::default(),
@@ -76,11 +76,6 @@ fn main() {
         }],
         map: vel0city::map::single_plane_map()
     };
-    game.movesettings.gravity = 9.8;
-    game.movesettings.accel = 25.0;
-    game.movesettings.maxspeed = 100.0; 
-    game.movesettings.movespeed = 6.0;
-    game.movesettings.friction = 8.0;
 
     let asset = assets::load_bin_asset("test.bsp").unwrap();
     let mapmodel = vel0city::qbsp_import::import_graphics_model(&asset, &display).unwrap();
@@ -95,10 +90,11 @@ fn main() {
             client.input.handle_event(&ev);
         }
 
-        let mut l = na::Iso3::new_with_rotmat(game.players[0].pos.to_vec() * -1.0, client.input.get_ang().to_rot());
+        let l = na::Iso3::new_with_rotmat(na::zero(), client.input.get_ang().to_rot()).inv().unwrap().to_homogeneous();
+        let v = na::Iso3::new(game.players[0].pos.to_vec() * -1.0, na::zero()).to_homogeneous();
         //l.inv();
         let view = vel0city::graphics::View {
-            w2s: proj * l.to_homogeneous(),
+            w2s: proj * l * v,
             drawparams: std::default::Default::default(),
         };
 

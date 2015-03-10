@@ -11,6 +11,8 @@ use Game;
 pub struct MoveInput {
     /// The velocity the player "wishes" to have 
     pub wishvel: na::Vec3<f32>,
+
+    pub jump: bool,
 }
 
 pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) {
@@ -23,17 +25,16 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             0.0
         };
 
-
+        let horizvel = na::Vec3::new(pl.vel.x, 0.0, pl.vel.z);
         let wishspeed = na::clamp(na::norm(&input.wishvel), 0.0, game.movesettings.movespeed);
         if !na::approx_eq(&wishspeed, &0.0) { 
             let movedir = na::normalize(&input.wishvel);
 
-            let curspeed = na::dot(&pl.vel, &movedir); 
+            let curspeed = na::dot(&horizvel, &movedir); 
             let maxdelta = game.movesettings.accel * dt;
             let addspeed = na::clamp((wishspeed - curspeed), -maxdelta, maxdelta);
             pl.vel = pl.vel + (movedir * addspeed);
         }
-
 
         let speed = na::norm(&pl.vel);
         if !na::approx_eq(&speed, &0.0) {
@@ -47,6 +48,11 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         }
 
         pl.vel.y -= game.movesettings.gravity * dt;
+
+        if input.jump && pl.flags.contains(PLAYER_ONGROUND) {
+            pl.vel.y += game.movesettings.jumpspeed;
+            pl.flags.remove(PLAYER_ONGROUND);
+        }
 
         let mut dt = dt;
         let mut hit_floor = false;

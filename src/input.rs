@@ -23,6 +23,7 @@ bitflags! {
 pub struct Input {
     ang: na::Vec3<f32>,
     buttons: Buttons,
+    cursorpos: (i32, i32),
 
     pub settings: InputSettings
 }
@@ -33,8 +34,9 @@ impl Input {
         Input {
             ang: na::zero(),
             buttons: Buttons::empty(),
+            cursorpos: (0, 0),
             settings: InputSettings {
-                sensitivity: 0.00001,
+                sensitivity: 0.01,
                 forwardkey: F,
                 backkey: N,
                 leftkey: Y,
@@ -75,12 +77,20 @@ impl Input {
                     action(&mut self.buttons, BUTTON_JUMP);
                 }
             },
-            &MouseMoved((x, y)) => {
-                self.ang.x += x as f32 * self.settings.sensitivity;
-                self.ang.y += y as f32 * self.settings.sensitivity;
+            &MouseMoved((absx, absy)) => {
+                use std::f32::consts::{
+                    PI_2,
+                    FRAC_PI_2
+                };
 
-                self.ang.x = (self.ang.x + 360.0) % 360.0;
-                self.ang.y = na::clamp(self.ang.y, -89.0, 89.0);
+                let (x, y) = (absx - self.cursorpos.0, absy - self.cursorpos.1);
+                self.cursorpos = (absx, absy);
+
+                self.ang.y += x as f32 * self.settings.sensitivity;
+                self.ang.x += y as f32 * self.settings.sensitivity;
+
+                self.ang.y = (self.ang.y + PI_2) % PI_2;
+                self.ang.x = na::clamp(self.ang.x, -FRAC_PI_2, FRAC_PI_2);
             },
             _ => ()
         }
@@ -99,15 +109,21 @@ impl Input {
         if self.buttons.contains(BUTTON_RIGHT) {
             wvel.x -= movesettings.movespeed;
         }
-        if self.buttons.contains(BUTTON_JUMP) {
-            wvel.y += movesettings.movespeed;
-        }
-        let wvel = na::rotate(&self.ang, &wvel);
+        let jump = self.buttons.contains(BUTTON_JUMP);
+
+        let wvel = na::rotate(
+            &na::Rot3::new(na::Vec3::new(0.0, self.ang.y, 0.0)),
+            &wvel);
+
         MoveInput {
-            wishvel: wvel
+            wishvel: wvel,
+            jump: jump,
         }
     }
     pub fn get_ang(&self) -> na::UnitQuat<f32> {
-        na::UnitQuat::from_euler_angles(self.ang.x, self.ang.y, 0.0)
+        let rot = na::UnitQuat::new(na::Vec3::new(0.0, self.ang.y, 0.0));
+        rot.append_rotation(
+            &na::Vec3::new(self.ang.x, 0.0, 0.0)
+            )
     }
 }
