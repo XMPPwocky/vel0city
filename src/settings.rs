@@ -24,12 +24,12 @@ impl std::default::Default for MoveSettings {
     fn default() -> MoveSettings {
         MoveSettings {
             gravity: 22.0,
-            accel: 5.0,
-            airaccel: 10.0,
+            accel: 10.0,
+            airaccel: 12.0,
             speedeps: 20.0,
-            maxspeed: 30.0,
-            movespeed: 500.0,
-            jumpspeed: 16.0,
+            maxspeed: 1000.0,
+            movespeed: 30.0,
+            jumpspeed: 20.0,
             friction: 2.0, 
         }
     }

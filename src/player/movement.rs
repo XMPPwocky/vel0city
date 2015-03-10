@@ -150,7 +150,7 @@ fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>) -> bool {
     if d < 0.0 {
         false
     } else {
-        *vel = *vel - (*norm * d * 1.01);
+        *vel = *vel - (*norm * d);
         true
     }
 }
