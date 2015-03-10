@@ -85,10 +85,8 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             if let Some(bsp::cast::CastResult { toi, .. }) = vis.best {
                 pl.pos = pl.pos + (pl.vel * dt * toi);
                 dt = dt * (1.0 - toi);
-                if na::approx_eq(&toi, &0.0) {
-                    if vis.hit_floor {
-                        hit_floor = true;
-                    }
+                if vis.hit_floor {
+                    hit_floor = true;
                 }
             } else {
                 pl.pos = pl.pos + pl.vel * dt;
@@ -148,8 +146,8 @@ impl PlaneCollisionVisitor for ClipMoveVisitor {
     fn should_visit_both(&self) -> bool { true }
 }
 fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>) -> bool {
-    let d = na::clamp(na::dot(vel, norm), 0.0, 1.0);
-    if na::approx_eq(&d, &0.0) {
+    let d = na::dot(vel, norm);
+    if d < 0.0 {
         false
     } else {
         *vel = *vel - (*norm * d * 1.01);

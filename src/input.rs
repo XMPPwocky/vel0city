@@ -85,7 +85,7 @@ impl Input {
                 let (x, y) = (absx - self.cursorpos.0, absy - self.cursorpos.1);
                 self.cursorpos = (absx, absy);
 
-                self.ang.y += x as f32 * self.settings.sensitivity;
+                self.ang.y -= x as f32 * self.settings.sensitivity;
                 self.ang.x += y as f32 * self.settings.sensitivity;
 
                 self.ang.y = (self.ang.y + PI_2) % PI_2;
