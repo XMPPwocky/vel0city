@@ -77,7 +77,9 @@ fn main() {
     let asset = assets::load_bin_asset("test.bsp").unwrap();
     let mapmodel = vel0city::qbsp_import::import_graphics_model(&asset, &display).unwrap();
     
-    //display.get_window().unwrap().set_cursor(glutin::MouseCursor::NoneCursor);
+    let winsize = display.get_window().unwrap().get_outer_size().unwrap();
+    client.input.cursorpos = (winsize.0 as i32 / 2, winsize.1 as i32 / 2);
+
     let mut lasttime = clock_ticks::precise_time_s();
     while !display.is_closed() {
         let curtime = clock_ticks::precise_time_s();

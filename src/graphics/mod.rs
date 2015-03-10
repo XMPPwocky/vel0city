@@ -48,9 +48,14 @@ pub fn draw_view(game: &Game,
                    &view.drawparams).unwrap()
     }*/
 
+    let samp = glium::uniforms::Sampler::new(&mapmodel.texture)
+        .anisotropy(8)
+        .magnify_filter(glium::uniforms::MagnifySamplerFilter::Linear)
+        .minify_filter(glium::uniforms::MinifySamplerFilter::LinearMipmapLinear);
+
     let uniforms = uniform! { 
         transform: *(view.w2s).as_array(),
-        color: &mapmodel.texture
+        color: samp
     };
 
     frame.draw(&mapmodel.mesh,
