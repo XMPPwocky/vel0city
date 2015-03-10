@@ -71,15 +71,16 @@ fn main() {
             eyeheight: 0.0,
             eyeang: na::UnitQuat::new_with_euler_angles(0.,0.,0.,),
             halfextents: vel0city::player::PLAYER_HALFEXTENTS,
-            vel: na::zero()
+            vel: na::zero(),
+            flags: vel0city::player::PlayerFlags::empty(),
         }],
         map: vel0city::map::single_plane_map()
     };
     game.movesettings.gravity = 9.8;
-    game.movesettings.accel = 15.0;
+    game.movesettings.accel = 25.0;
     game.movesettings.maxspeed = 100.0; 
     game.movesettings.movespeed = 6.0;
-    game.movesettings.friction = 5.0;
+    game.movesettings.friction = 8.0;
 
     let asset = assets::load_bin_asset("test.bsp").unwrap();
     let mapmodel = vel0city::qbsp_import::import_graphics_model(&asset, &display).unwrap();
@@ -94,7 +95,7 @@ fn main() {
             client.input.handle_event(&ev);
         }
 
-        let mut l = na::Iso3::new_with_rotmat(game.players[0].pos.to_vec() * -1.0, client.input.ang.to_rot());
+        let mut l = na::Iso3::new_with_rotmat(game.players[0].pos.to_vec() * -1.0, client.input.get_ang().to_rot());
         //l.inv();
         let view = vel0city::graphics::View {
             w2s: proj * l.to_homogeneous(),
@@ -113,7 +114,6 @@ fn main() {
                                       &mapmodel,
                                       &mut target);
         target.finish();
-        println!("{:?}", na::norm(&game.players[0].vel));
     }
         
 }

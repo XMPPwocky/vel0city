@@ -5,6 +5,12 @@ pub mod movement;
 // remove this later
 pub const PLAYER_HALFEXTENTS: na::Vec3<f32> = na::Vec3 { x: 1.0, y: 1.0, z: 1.0 };
 
+bitflags! {
+    flags PlayerFlags: u32 {
+        const PLAYER_ONGROUND = 0b00_00_00_01
+    }
+}
+
 pub struct Player {
     pub pos: na::Pnt3<f32>,
     pub eyeheight: f32,
@@ -12,6 +18,7 @@ pub struct Player {
 
     pub halfextents: na::Vec3<f32>,
     pub vel: na::Vec3<f32>,
+    pub flags: PlayerFlags
 }
 
 #[cfg(test)]
@@ -28,6 +35,7 @@ pub mod test {
 
             halfextents: PLAYER_HALFEXTENTS,
             vel: na::zero(),
+            flags: PlayerFlags::empty()
         }
     }
 }

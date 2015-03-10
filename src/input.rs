@@ -1,4 +1,7 @@
-use na;
+use na::{
+    self,
+    Rotation
+};
 use glutin::{
     self,
     VirtualKeyCode
@@ -18,7 +21,7 @@ bitflags! {
 }
 
 pub struct Input {
-    pub ang: na::UnitQuat<f32>,
+    ang: na::Vec3<f32>,
     buttons: Buttons,
 
     pub settings: InputSettings
@@ -28,10 +31,10 @@ impl Input {
         use glutin::VirtualKeyCode::*;
 
         Input {
-            ang: na::UnitQuat::new_with_euler_angles(0.0, 0.0, 0.0),
+            ang: na::zero(),
             buttons: Buttons::empty(),
             settings: InputSettings {
-                sensitivity: 1.0,
+                sensitivity: 0.00001,
                 forwardkey: F,
                 backkey: N,
                 leftkey: Y,
@@ -43,7 +46,7 @@ impl Input {
     pub fn handle_event(&mut self,
                         event: &glutin::Event) {
         use glutin::Event::{
-            //MouseMoved,
+            MouseMoved,
             KeyboardInput
         };
 
@@ -68,6 +71,16 @@ impl Input {
                 if vkcode == self.settings.rightkey { 
                     action(&mut self.buttons, BUTTON_RIGHT);
                 }
+                if vkcode == self.settings.jumpkey { 
+                    action(&mut self.buttons, BUTTON_JUMP);
+                }
+            },
+            &MouseMoved((x, y)) => {
+                self.ang.x += x as f32 * self.settings.sensitivity;
+                self.ang.y += y as f32 * self.settings.sensitivity;
+
+                self.ang.x = (self.ang.x + 360.0) % 360.0;
+                self.ang.y = na::clamp(self.ang.y, -89.0, 89.0);
             },
             _ => ()
         }
@@ -86,9 +99,15 @@ impl Input {
         if self.buttons.contains(BUTTON_RIGHT) {
             wvel.x -= movesettings.movespeed;
         }
+        if self.buttons.contains(BUTTON_JUMP) {
+            wvel.y += movesettings.movespeed;
+        }
         let wvel = na::rotate(&self.ang, &wvel);
         MoveInput {
             wishvel: wvel
         }
+    }
+    pub fn get_ang(&self) -> na::UnitQuat<f32> {
+        na::UnitQuat::from_euler_angles(self.ang.x, self.ang.y, 0.0)
     }
 }
