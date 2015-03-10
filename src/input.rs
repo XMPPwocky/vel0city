@@ -4,7 +4,6 @@ use na::{
 };
 use glutin::{
     self,
-    VirtualKeyCode
 };
 use settings::InputSettings;
 use player::movement::MoveInput;

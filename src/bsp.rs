@@ -291,7 +291,6 @@ impl Tree {
                 }
 
                 false
-                //hit
             },
         }
     }
