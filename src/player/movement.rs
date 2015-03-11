@@ -4,7 +4,8 @@ use bsp::PlaneCollisionVisitor;
 use bsp::cast::CastResult;
 use player::{
     PlayerFlags,
-    PLAYER_ONGROUND
+    PLAYER_ONGROUND,
+    PLAYER_JUMPED
 };
 use na;
 use Game;
@@ -43,18 +44,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         } else {
             game.movesettings.airspeed
         };
-
-        let horizvel = na::Vec3::new(pl.vel.x, 0.0, pl.vel.z);
-        let wishspeed = na::clamp(na::norm(&input.wishvel), 0.0, speedcap);
-        if !na::approx_eq(&wishspeed, &0.0) { 
-            let movedir = na::normalize(&input.wishvel);
-
-            let curspeed = na::dot(&horizvel, &movedir); 
-            let maxdelta = accel * wishspeed * dt;
-            let addspeed = na::clamp((wishspeed - curspeed), -maxdelta, maxdelta);
-            pl.vel = pl.vel + (movedir * addspeed);
-        }
-
+        
         let speed = na::norm(&pl.vel);
         if !na::approx_eq(&speed, &0.0) {
             let dir = na::normalize(&pl.vel);
@@ -72,12 +62,32 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.vel = dir * newspeed;
         }
 
+        let horizvel = na::Vec3::new(pl.vel.x, 0.0, pl.vel.z);
+        let wishspeed = na::clamp(na::norm(&input.wishvel), 0.0, speedcap);
+        if !na::approx_eq(&wishspeed, &0.0) { 
+            let movedir = na::normalize(&input.wishvel);
+
+            let curspeed = na::dot(&horizvel, &movedir); 
+            let maxdelta = accel * wishspeed * dt;
+            let addspeed = na::clamp((wishspeed - curspeed), 0.0, maxdelta);
+            pl.vel = pl.vel + (movedir * addspeed);
+        }
+
+
         pl.vel.y -= game.movesettings.gravity * dt;
 
-        if input.jump && pl.flags.contains(PLAYER_ONGROUND) {
-            pl.vel.y = game.movesettings.jumpspeed;
-            pl.flags.remove(PLAYER_ONGROUND);
+        if !input.jump {
+            pl.flags.remove(PLAYER_JUMPED);
         }
+
+        if input.jump && pl.flags.contains(PLAYER_ONGROUND) { 
+            if !pl.flags.contains(PLAYER_JUMPED) {
+                pl.vel.y = game.movesettings.jumpspeed;
+                pl.flags.remove(PLAYER_ONGROUND);
+            }
+            pl.flags.insert(PLAYER_JUMPED);
+        }
+
 
         let mut dt = dt;
         let mut hit_floor = false;
@@ -166,7 +176,7 @@ fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>) -> bool {
     if d < 0.0 {
         false
     } else {
-        *vel = *vel - (*norm * d);
+        *vel = *vel - (*norm * d * 1.01);
         true
     }
 }

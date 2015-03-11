@@ -7,7 +7,8 @@ pub const PLAYER_HALFEXTENTS: na::Vec3<f32> = na::Vec3 { x: 3.0, y: 6.0, z: 3.0 
 
 bitflags! {
     flags PlayerFlags: u32 {
-        const PLAYER_ONGROUND = 0b00_00_00_01
+        const PLAYER_ONGROUND = 0b00_00_00_01,
+        const PLAYER_JUMPED = 0b00_00_00_10,
     }
 }
 
