@@ -15,6 +15,7 @@ fn signcpy(n: f32, from: f32) -> f32 {
     }
 }
 
+const TEST_EPS: f32 = 1.0 / 32.0; 
 #[derive(Copy, Debug, PartialEq)]
 pub enum PlaneTestResult {
     Front,
@@ -251,6 +252,25 @@ impl Tree {
             PlaneTestResult::Span(cresult) => {
                 // Then we must check both subtrees.
                 // Split the ray into two rays, the part of each ray in each subtree.
+
+                // Find the distance from each endpoint to the plane...
+                let startpos = ray.orig.to_vec();
+                let endpos = ray.orig.to_vec() + ray.dir;
+                let startdist = na::dot(&startpos, &plane.norm) - plane.dist;
+                let enddist = na::dot(&endpos, &plane.norm) - plane.dist;
+                let mut sfrac = 0.0;
+                let mut efrac = 0.0;
+                if startdist < enddist {
+                    sfrac = (startdist + TEST_EPS) / (startdist - enddist);
+                    efrac = (startdist + TEST_EPS) / (startdist - enddist);
+                } else if enddist < startdist {
+                    sfrac = (startdist + TEST_EPS) / (startdist - enddist);
+                    efrac = (startdist - TEST_EPS) / (startdist - enddist);
+                } else {
+                    sfrac = 1.0;
+                    efrac = 0.0;
+                }
+
                 let mid = cresult.toi;
 
                 let (near, far) = if coincident {
@@ -260,7 +280,7 @@ impl Tree {
                 };
 
                 let (nearbounds, farbounds) =
-                    ((start, mid), (mid, end));
+                    ((start, sfrac), (efrac, end));
 
                 // Invoke the visitor, if: 
                 // 1. the ray intersects this plane (isn't just on one side) 
