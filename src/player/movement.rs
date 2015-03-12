@@ -101,10 +101,13 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         let mut dt = dt;
         let mut hit_floor = false;
         let mut numcontacts = 0;
-        let mut contacts: [na::Vec3<f32>; 4] = [na::zero(); 4]; 
+        let mut contacts: [na::Vec3<f32>; 5] = [na::zero(); 5]; 
         let mut v = pl.vel;
-        println!("pos: {:?}", pl.pos);
-        for _ in 0..3 {
+        for _ in 0..4 {
+            if na::approx_eq(&dt, &0.0) {
+                break;
+            }
+
             let moveray = bsp::cast::Ray {
                 orig: pl.pos,
                 dir: v * dt,
@@ -131,10 +134,9 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                 } else {
                     numcontacts += 1;
                 }
-                println!("Hit {:?} with vel {:?}", norm, v);
                 contacts[numcontacts - 1] = norm;
-                //println!("contacts: {:?}", &contacts[..numcontacts]);
-                let mut bad = false;
+                v = pl.vel;
+                /*
                 for i in 0..numcontacts {
                     clip_velocity(&mut v, &contacts[i]); 
                     bad = false;
@@ -147,9 +149,11 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                     if !bad {
                         break;
                     }
-                }
-                if bad {
-                    if numcontacts == 2 {
+                }*/
+                if true {
+                    if numcontacts == 1 {
+                        clip_velocity(&mut v, &contacts[0]);
+                    } else if numcontacts == 2 {
                         let crease = na::cross(&contacts[0], &contacts[1]);
                         v = crease * na::dot(&v, &crease);
                     } else {
@@ -162,8 +166,6 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             }
         }
         pl.vel = v;
-        println!("vel: {:?}", pl.vel);
-
         if hit_floor {
             pl.flags.insert(PLAYER_ONGROUND)
         } else {
@@ -213,9 +215,6 @@ fn plane_matters(vel: &na::Vec3<f32>, norm: &na::Vec3<f32>) -> bool {
 
 fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>) {
     let mut d = na::dot(vel, norm);
-    if d < 0.0 {
-        d = 0.0;
-    }
     *vel = *vel - (*norm * d * 1.01);
 }
 

@@ -218,35 +218,36 @@ impl Tree {
             na::abs(&(ray.halfextents.y * plane.norm.y)) + 
             na::abs(&(ray.halfextents.z * plane.norm.z));
 
+        const EPS: f32 = 1.0/16.0;
+
         // How does the ray interact with this plane?
         if d1 > (pad + 0.) && d2 > (pad + 0.) {
             // Then just check the front subtree.
             self.cast_ray_recursive(&ray, pos, (start, end), (startpos, endpos), visitor) 
         } else if d1 < -(pad + 0.) && d2 < -(pad + 0.) { 
                 self.cast_ray_recursive(&ray, neg, (start, end), (startpos, endpos), visitor) 
+        } else if na::approx_eq(&d1, &d2) { 
+            false
+            //self.cast_ray_recursive(&ray, pos, (start, end), (startpos, endpos), visitor) 
         } else {
 
             let td = d2 - d1;
-            let (ns, fs);
+            let (mut ns, mut fs);
             let coincident;
             if d1 < d2 {  
                 coincident = true;
-                ns = (d1 + 0.031 + pad) / td;
-                fs = (d1 - 0.031 - pad) / td;
+                ns = (d1 + EPS + pad) / td;
+                fs = (d1 - EPS - pad) / td;
             } else if d1 > d2 {
                 coincident = false;
-                ns = (d1 - 0.031 - pad) / td;
-                fs = (d1 + 0.031 + pad) / td;
+                ns = (d1 + EPS - pad) / td;
+                fs = (d1 - EPS + pad) / td;
             } else {
-                println!("PARALLEL");
-                coincident = true;
-                ns = 1.0;
-                fs = 1.0;
+                unreachable!();
             };
-
             let ns = na::clamp(ns, 0.0, 1.0);
             let fs = na::clamp(fs, 0.0, 1.0);
-
+            
             let ns = start + (end - start) * ns;
             let fs = start + (end - start) * fs;
 
