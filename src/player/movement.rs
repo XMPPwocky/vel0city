@@ -76,6 +76,15 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
 
         pl.vel.y -= game.movesettings.gravity * dt;
 
+        // clamp velocity again after gravity
+        let speed = na::norm(&pl.vel);
+        if !na::approx_eq(&speed, &0.0) {
+            let dir = na::normalize(&pl.vel);
+            let newspeed = na::clamp(speed, 0.0, game.movesettings.maxspeed); 
+
+            pl.vel = dir * newspeed;
+        }
+
         if !input.jump {
             pl.flags.remove(PLAYER_JUMPED);
         }
@@ -94,6 +103,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         let mut numcontacts = 0;
         let mut contacts: [na::Vec3<f32>; 4] = [na::zero(); 4]; 
         let mut v = pl.vel;
+        println!("pos: {:?}", pl.pos);
         for _ in 0..3 {
             let moveray = bsp::cast::Ray {
                 orig: pl.pos,
@@ -115,15 +125,15 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                 }
 
                 if toi != 0.0 {
-                    println!("covered distance...");
                     numcontacts = 1;
                     pl.pos = pl.pos + (v * dt * toi);
                     dt = dt * (1.0 - toi);
                 } else {
                     numcontacts += 1;
                 }
+                println!("Hit {:?} with vel {:?}", norm, v);
                 contacts[numcontacts - 1] = norm;
-                println!("contacts: {:?}", &contacts[..numcontacts]);
+                //println!("contacts: {:?}", &contacts[..numcontacts]);
                 let mut bad = false;
                 for i in 0..numcontacts {
                     clip_velocity(&mut v, &contacts[i]); 
@@ -202,38 +212,6 @@ fn plane_matters(vel: &na::Vec3<f32>, norm: &na::Vec3<f32>) -> bool {
 
 fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>) {
     let d = na::dot(vel, norm);
-    *vel = *vel - (*norm * d * 1.01);
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use na::{self,
-    ApproxEq
-    };
-
-    #[test]
-    fn movement_clipping() {
-        let mut game = ::test::simple_game();
-        game.players[0].pos = na::Pnt3::new(0.0, 10.0, 0.0);
-        let input = MoveInput {
-            wishvel: na::Vec3::new(0.0, -200.0, 0.0)
-        };
-        move_player(&mut game, 0, &input, 1.0);
-        assert_approx_eq!(game.players[0].pos.y, ::player::PLAYER_HALFEXTENTS.y);
-        assert_approx_eq!(game.players[0].vel.y, 0.0); 
-    }
-
-    #[test]
-    fn gravity() {
-        let mut game = ::test::simple_game();
-        game.movesettings.gravity = 5.0; 
-        game.players[0].pos = na::Pnt3::new(0.0, 10.0, 0.0);
-        let input = MoveInput {
-            wishvel: na::Vec3::new(0.0, 0.0, 0.0)
-        };
-        move_player(&mut game, 0, &input, 1.0);
-        assert_approx_eq!(game.players[0].pos.y, 5.0); 
-    }
+    *vel = *vel - (*norm * d * 1.0);
 }
 

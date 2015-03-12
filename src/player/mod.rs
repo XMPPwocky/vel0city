@@ -27,6 +27,7 @@ pub mod test {
     use na;
     use super::PLAYER_HALFEXTENTS;
     use super::Player;
+    use super::PlayerFlags;
 
     pub fn simple_player() -> Player {
         Player {

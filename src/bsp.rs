@@ -21,35 +21,6 @@ pub enum PlaneTestResult {
     Back,
     Span(CastResult)
 }
-impl PlaneTestResult {
-    // Turns a test with an entire ray into what the result would have been
-    // with a fraction of the ray- with the exception of TOI, which is still
-    // in terms of the full ray.
-    fn clip(self, start: f32, end: f32, coincident: bool) -> PlaneTestResult {
-        use self::PlaneTestResult::{Front, Back, Span};
-
-        match self {
-            Span(CastResult { toi, norm }) => {
-                if toi < start {
-                    if coincident {
-                        Front
-                    } else {
-                        Back
-                    }
-                } else if toi > end {
-                    if coincident {
-                        Back
-                    } else {
-                        Front
-                    }
-                } else {
-                    Span(CastResult { toi: toi, norm: norm })
-                }
-            },
-            other => other
-        }
-    }
-}
 
 #[derive(RustcDecodable, RustcEncodable, Clone, Debug)]
 pub struct Plane {
@@ -62,23 +33,27 @@ impl Plane {
         (self.norm * self.dist).to_pnt()
     }
 
+    fn dist_to_point(&self, point: &na::Pnt3<f32>) -> f32 {
+        na::dot(&self.norm, point.as_vec()) - self.dist
+    }
+
     /// Tests a ray against this plane
-    fn test_ray(&self, ray: &Ray) -> PlaneTestResult {
+    fn test_ray(&self, ray: &Ray, eps: f32) -> PlaneTestResult {
         // The length of the support vector.
         let pad = na::abs(&(ray.halfextents.x * self.norm.x)) +
             na::abs(&(ray.halfextents.y * self.norm.y)) + 
             na::abs(&(ray.halfextents.z * self.norm.z));
 
         // Turn the ray into a line segment...
-        let start = ray.orig.to_vec();
-        let end = ray.orig.to_vec() + ray.dir;
+        let start = ray.orig;
+        let end = (ray.orig.to_vec() + ray.dir).to_pnt();
 
         // Find the distance from each endpoint to the plane...
-        let startdist = na::dot(&start, &self.norm) - self.dist;
-        let enddist = na::dot(&end, &self.norm) - self.dist;
+        let startdist = self.dist_to_point(&start);
+        let enddist = self.dist_to_point(&end); 
 
         // Are they both in front / back?
-        if startdist >= pad && enddist >= pad {
+        if startdist >= pad && enddist >= pad { 
             return PlaneTestResult::Front
         } else if startdist <= -pad && enddist <= -pad {
             return PlaneTestResult::Back;
@@ -87,17 +62,19 @@ impl Plane {
         // Apparently, the line segment spans the plane.
         let absstart = na::abs(&startdist);
         let totaldist = na::abs(&(startdist - enddist));
-        let toi = if absstart <= pad || totaldist == 0.0 {
-            // if you started out touching, or if the ray is zero-length,
-            // report a TOI of 0.
-            // The first is reasonable, the second is only there to avoid
-            // a potential division-by-zero.
-            0.0
-        } else {
+        if totaldist == 0.0 {
+            if startdist >= 0.0 {
+                return PlaneTestResult::Front;
+            } else { 
+                return PlaneTestResult::Back;
+            }
+        };
+        let toi = {
             // I'm honestly not sure how this works, but it appears to, so
             // don't screw with it.
-            (absstart - pad) / totaldist
+            (absstart - pad - eps) / totaldist
         };
+        let toi = na::clamp(toi, 0.0, 1.0);
 
         PlaneTestResult::Span(CastResult {
             toi: toi,
@@ -206,7 +183,7 @@ impl Tree {
     /// Casts a ray against the tree, returning a CastResult if it hit anything.
     pub fn cast_ray(&self, ray: &Ray) -> Option<CastResult> {
         let mut visitor = JustFirstPlaneVisitor::new();
-        self.cast_ray_recursive(ray, self.root, (0.0, 1.0), &mut visitor);
+        self.cast_ray_recursive(ray, self.root, (0.0, 1.0), (ray.orig, (ray.orig.to_vec() + ray.dir).to_pnt()), &mut visitor);
         visitor.best
     }
 
@@ -215,17 +192,21 @@ impl Tree {
     /// collision manifold.
     pub fn cast_ray_visitor<V>(&self, ray: &Ray, visitor: &mut V)
     where V: PlaneCollisionVisitor {
-        self.cast_ray_recursive(ray, self.root, (0.0, 1.0), visitor);
+        self.cast_ray_recursive(ray, self.root, (0.0, 1.0), (ray.orig, (ray.orig.to_vec() + ray.dir).to_pnt()), visitor);
     }
 
     /// Takes a ray, bounded by [start, end) (from its origin to its direction)
     /// Tests that against the node nodeidx, and returns true if the ray hit
     /// the tree (starting at this node) within the bounds. If so, it also
     /// invokes the PlaneCollisionVisitor `visitor`.
-    fn cast_ray_recursive<V>(&self, ray: &Ray, nodeidx: NodeIndex, (start, end): (f32, f32), visitor: &mut V) -> bool
+    fn cast_ray_recursive<V>(&self, ray: &Ray, nodeidx: NodeIndex, (start, end): (f32, f32), (startpos, endpos): (na::Pnt3<f32>, na::Pnt3<f32>), visitor: &mut V) -> bool
     where V: PlaneCollisionVisitor {
         if nodeidx < 0 {
             return self.get_leaf(nodeidx).is_solid();
+        }
+
+        if start == end {
+            return false;
         }
 
         let InnerNode { ref plane, pos, neg } = self.inodes[nodeidx as usize];
@@ -233,69 +214,75 @@ impl Tree {
         // does the ray point towards the plane's front?
         let coincident = ray.dir.dot(&plane.norm) >= 0.0; 
 
-        let pltest = plane.test_ray(ray).clip(start, end, coincident);
+        let d1 = plane.dist_to_point(&startpos);
+        let d2 = plane.dist_to_point(&endpos);
+
+        let pad = na::abs(&(ray.halfextents.x * plane.norm.x)) +
+            na::abs(&(ray.halfextents.y * plane.norm.y)) + 
+            na::abs(&(ray.halfextents.z * plane.norm.z));
 
         // How does the ray interact with this plane?
-        match pltest {
-            // Does it lie entirely in front?
-            PlaneTestResult::Front => {
-                // Then just check the front subtree.
-                self.cast_ray_recursive(&ray, pos, (start, end), visitor) 
-            },
-            // ... or perhaps it's entirely behind the plane? 
-            PlaneTestResult::Back => {
-                // Then just check the back subtree.
-                self.cast_ray_recursive(&ray, neg, (start, end), visitor) 
+        if d1 >= pad && d2 >= pad {
+            // Then just check the front subtree.
+            self.cast_ray_recursive(&ray, pos, (start, end), (startpos, endpos), visitor) 
+        } else if d1 <= -pad && d2 <= -pad {
+                self.cast_ray_recursive(&ray, neg, (start, end), (startpos, endpos), visitor) 
+        } else {
+
+            let td = d2 - d1;
+            let (ns, fs, toi);
+            if d1 < d2 {  
+                ns = (d1 - 0.031 - pad) / td;
+                fs = (d1 - 0.031 + pad) / td;
+                toi = (d1 - pad) / td;
+            } else if d2 < d1 {
+                ns = (d1 + 0.031 + pad) / td;
+                fs = (d1 + 0.031 - pad) / td;
+                toi = (d1 + pad) / td;
+            } else {
+                ns = 1.0;
+                fs = 0.0;
+                toi = 0.5;
+            };
+
+            let ns = na::clamp(ns, 0.0, 1.0);
+            let fs = na::clamp(fs, 0.0, 1.0);
+            let toi = na::clamp(toi, 0.0, 1.0);
+
+            let ns = start + (end - start) * ns;
+            let fs = start + (end - start) * fs;
+            let toi = start + (end - start) * toi;
+
+            let (near, far) = if coincident {
+                (neg, pos) 
+            } else {
+                (pos, neg)
+            };
+
+            let (nearbounds, farbounds) =
+                ((start, ns), (fs, end));
+
+            let nmid = (startpos.to_vec() + ray.dir * ns).to_pnt();
+            let fmid = (startpos.to_vec() + ray.dir * fs).to_pnt();
+
+            let mut hit = false;
+
+            if self.cast_ray_recursive(ray, near, nearbounds, (startpos, nmid), visitor) {
+                hit = true;
             }
-            // Or does it intersect the plane?
-            PlaneTestResult::Span(cresult) => {
-                // Then we must check both subtrees.
-                // Split the ray into two rays, the part of each ray in each subtree.
-                let mid = cresult.toi;
-
-                let (near, far) = if coincident {
-                    (neg, pos) 
-                } else {
-                    (pos, neg)
-                };
-
-                let (nearbounds, farbounds) =
-                    ((start, mid), (mid, end));
-
-                // Invoke the visitor, if: 
-                // 1. the ray intersects this plane (isn't just on one side) 
-                // 2. there was actually something solid on at least one side of this plane
-                // In other words, if this plane contains a solid face.
-                // Note that this happens *after* the recursive call. In other words, we do
-                // this while going "back up" the call stack, after we know if there's
-                // solid faces involved.
-                // Also note that even if both sides hit something solid, this plane
-                // is still a face.
-                // (Does that still hold if leaves can be distinguished by criteria other than
-                // solid/nonsolid? e.g. if you have two different textures... aha, but you can
-                // never hit an internal face first anyways, so it shouldn't matter in practice) 
-
-                let mut hit = false;
-
-                if self.cast_ray_recursive(ray, near, nearbounds, visitor) {
+            if !hit || visitor.should_visit_both() {
+                if self.cast_ray_recursive(ray, far, farbounds, (fmid, endpos), visitor) {
                     hit = true;
                 }
-                if !hit || visitor.should_visit_both() {
-                    if self.cast_ray_recursive(ray, far, farbounds, visitor) {
-                        hit = true;
-                    }
-                }
+            }
 
                 if hit {
-                    visitor.visit_plane(&plane, &cresult);
-                }
+                    visitor.visit_plane(&plane, &CastResult { norm: plane.norm, toi: ns });
+                } 
 
-                false
-            },
+            false
         }
     }
-
-
 }
 
 /// Loads a test BSP. The exact contents of this change with the
@@ -387,13 +374,13 @@ pub mod test {
     fn plane_cubetest() {
         let plane = Plane {
             norm: na::Vec3::new(1.0, 0.0, 0.0),
-            dist: 0.0,
+            dist: 16.0,
         };
 
         let result = plane.test_ray(&Ray {
-            orig: na::Pnt3::new(-1.0, 0.0, 0.0),
-            dir: na::Vec3::new(1.0, 0.0, 0.0),
-            halfextents: na::Vec3::new(0.5, 0.0, 0.0),
+            orig: na::Pnt3::new(16.1, 0.0, 0.0),
+            dir: na::Vec3::new(0.0, 0.0, 1.0),
+            halfextents: na::Vec3::new(1.0, 1.0, 1.0),
         });
 
         match result {
@@ -418,37 +405,4 @@ pub mod test {
             x => panic!("{:?}", x)
         };
     }
-
-
-    #[test]
-    fn bsp_raycast() {
-        let tree = test_tree();
-
-        let r1 = Ray {
-            orig: na::Pnt3::new(0.0, 0.5, 0.0), 
-            dir: na::Vec3::new(0.0, -1.0, 0.0),
-            halfextents: na::zero(),
-        };
-        assert_castresult!(tree.cast_ray(&r1), 0.5, na::Vec3::new(0.0, 1.0, 0.0));
-
-        let r2 = Ray {
-            orig: na::Pnt3::new(0.0, 0.5, 0.0),
-            dir: na::Vec3::new(0.0, 1.0, 0.0),
-            halfextents: na::zero(),
-        };
-        assert!(!tree.cast_ray(&r2).is_some());
-    }
-
-    #[test]
-    fn bsp_cubecast() { 
-        let tree = test_tree();
-
-        let r1 = Ray {
-            orig: na::Pnt3::new(0.0, 1.0, 0.0),
-            dir: na::Vec3::new(0.0, -1.0, 0.0),
-            halfextents: na::Vec3::new(0.0, 0.5, 0.0),
-        };
-        assert_castresult!(tree.cast_ray(&r1), 0.5, na::Vec3::new(0.0, 1.0, 0.0));
-    }
-
 }
