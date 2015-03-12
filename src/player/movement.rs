@@ -22,7 +22,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
     {
         let pl = &mut game.players[playeridx as usize];
         if input.reset {
-            pl.pos = na::Pnt3::new(0.0, 0.0, 0.0);
+            pl.pos = na::Pnt3::new(0.0, 10.0, 0.0);
             pl.vel = na::zero();
             pl.flags = PlayerFlags::empty(); 
         };
@@ -124,7 +124,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                     hit_floor = true;
                 }
 
-                if toi != 0.0 {
+                if toi > 0.0 {
                     numcontacts = 1;
                     pl.pos = pl.pos + (v * dt * toi);
                     dt = dt * (1.0 - toi);
@@ -162,6 +162,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             }
         }
         pl.vel = v;
+        println!("vel: {:?}", pl.vel);
 
         if hit_floor {
             pl.flags.insert(PLAYER_ONGROUND)
@@ -211,7 +212,10 @@ fn plane_matters(vel: &na::Vec3<f32>, norm: &na::Vec3<f32>) -> bool {
 }
 
 fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>) {
-    let d = na::dot(vel, norm);
-    *vel = *vel - (*norm * d * 1.0);
+    let mut d = na::dot(vel, norm);
+    if d < 0.0 {
+        d = 0.0;
+    }
+    *vel = *vel - (*norm * d * 1.01);
 }
 

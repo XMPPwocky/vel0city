@@ -205,15 +205,12 @@ impl Tree {
             return self.get_leaf(nodeidx).is_solid();
         }
 
-        if start == end {
+        if start > end {
             return false;
         }
 
         let InnerNode { ref plane, pos, neg } = self.inodes[nodeidx as usize];
         
-        // does the ray point towards the plane's front?
-        let coincident = ray.dir.dot(&plane.norm) >= 0.0; 
-
         let d1 = plane.dist_to_point(&startpos);
         let d2 = plane.dist_to_point(&endpos);
 
@@ -222,36 +219,36 @@ impl Tree {
             na::abs(&(ray.halfextents.z * plane.norm.z));
 
         // How does the ray interact with this plane?
-        if d1 >= pad && d2 >= pad {
+        if d1 > (pad + 0.) && d2 > (pad + 0.) {
             // Then just check the front subtree.
             self.cast_ray_recursive(&ray, pos, (start, end), (startpos, endpos), visitor) 
-        } else if d1 <= -pad && d2 <= -pad {
+        } else if d1 < -(pad + 0.) && d2 < -(pad + 0.) { 
                 self.cast_ray_recursive(&ray, neg, (start, end), (startpos, endpos), visitor) 
         } else {
 
             let td = d2 - d1;
-            let (ns, fs, toi);
+            let (ns, fs);
+            let coincident;
             if d1 < d2 {  
-                ns = (d1 - 0.031 - pad) / td;
-                fs = (d1 - 0.031 + pad) / td;
-                toi = (d1 - pad) / td;
-            } else if d2 < d1 {
+                coincident = true;
                 ns = (d1 + 0.031 + pad) / td;
-                fs = (d1 + 0.031 - pad) / td;
-                toi = (d1 + pad) / td;
+                fs = (d1 - 0.031 - pad) / td;
+            } else if d1 > d2 {
+                coincident = false;
+                ns = (d1 - 0.031 - pad) / td;
+                fs = (d1 + 0.031 + pad) / td;
             } else {
+                println!("PARALLEL");
+                coincident = true;
                 ns = 1.0;
-                fs = 0.0;
-                toi = 0.5;
+                fs = 1.0;
             };
 
             let ns = na::clamp(ns, 0.0, 1.0);
             let fs = na::clamp(fs, 0.0, 1.0);
-            let toi = na::clamp(toi, 0.0, 1.0);
 
             let ns = start + (end - start) * ns;
             let fs = start + (end - start) * fs;
-            let toi = start + (end - start) * toi;
 
             let (near, far) = if coincident {
                 (neg, pos) 
@@ -266,21 +263,16 @@ impl Tree {
             let fmid = (startpos.to_vec() + ray.dir * fs).to_pnt();
 
             let mut hit = false;
-
             if self.cast_ray_recursive(ray, near, nearbounds, (startpos, nmid), visitor) {
+                visitor.visit_plane(&plane, &CastResult { norm: plane.norm, toi: ns });
                 hit = true;
             }
-            if !hit || visitor.should_visit_both() {
-                if self.cast_ray_recursive(ray, far, farbounds, (fmid, endpos), visitor) {
-                    hit = true;
-                }
+            if self.cast_ray_recursive(ray, far, farbounds, (fmid, endpos), visitor) {
+                visitor.visit_plane(&plane, &CastResult { norm: plane.norm, toi: fs });
+                hit = true;
             }
 
-                if hit {
-                    visitor.visit_plane(&plane, &CastResult { norm: plane.norm, toi: ns });
-                } 
-
-            false
+            hit
         }
     }
 }
