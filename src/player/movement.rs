@@ -122,15 +122,14 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
 
             game.map.bsp.cast_ray_visitor(&moveray, &mut vis);
 
-            if let Some(bsp::cast::CastResult { toi, norm }) = vis.best {
+            if let Some(bsp::cast::CastResult { toi, norm, pos }) = vis.best {
                 if norm.y < -0.7 {
                     hit_floor = true;
                 }
 
                 if toi > 0.0 {
-                    println!("TOI: {} Norm: {:?}", toi, norm); 
                     numcontacts = 1;
-                    pl.pos = pl.pos + (v * dt * toi);
+                    pl.pos = pos; 
                     dt = dt * (1.0 - toi);
                     if toi >= 1.0 {
                         break;
@@ -139,7 +138,6 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                     numcontacts += 1;
                 }
                 contacts[numcontacts - 1] = norm;
-                println!("{:?}", &contacts[0..numcontacts]);
                 v = pl.vel;
                 /*
                 for i in 0..numcontacts {
@@ -162,11 +160,10 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                         let crease = na::cross(&contacts[0], &contacts[1]);
                         v = crease * na::dot(&v, &crease);
                     } else {
-                        panic!("{}", numcontacts);
+                        // stuck in corner
                         v = na::zero();
                     }
                 }
-                println!("clip to {:?}", v);
             } else {
                 pl.pos = pl.pos + v * dt;
                 break;
