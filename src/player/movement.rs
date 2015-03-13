@@ -162,6 +162,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                         let crease = na::cross(&contacts[0], &contacts[1]);
                         v = crease * na::dot(&v, &crease);
                     } else {
+                        panic!("{}", numcontacts);
                         v = na::zero();
                     }
                 }
