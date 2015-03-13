@@ -27,6 +27,14 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.flags = PlayerFlags::empty(); 
         };
 
+        if input.jump && pl.flags.contains(PLAYER_ONGROUND) { 
+            if !pl.flags.contains(PLAYER_JUMPED) {
+                pl.vel.y = game.movesettings.jumpspeed;
+                pl.flags.remove(PLAYER_ONGROUND);
+            }
+            //pl.flags.insert(PLAYER_JUMPED);
+        }
+
         let accel = if pl.flags.contains(PLAYER_ONGROUND) {
             game.movesettings.accel
         } else {
@@ -89,13 +97,6 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.flags.remove(PLAYER_JUMPED);
         }
 
-        if input.jump && pl.flags.contains(PLAYER_ONGROUND) { 
-            if !pl.flags.contains(PLAYER_JUMPED) {
-                pl.vel.y = game.movesettings.jumpspeed;
-                pl.flags.remove(PLAYER_ONGROUND);
-            }
-            pl.flags.insert(PLAYER_JUMPED);
-        }
 
 
         let mut dt = dt;
@@ -139,7 +140,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                 }
                 contacts[numcontacts - 1] = norm;
                 v = pl.vel;
-                /*
+                let mut bad = false;
                 for i in 0..numcontacts {
                     clip_velocity(&mut v, &contacts[i]); 
                     bad = false;
@@ -152,17 +153,22 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                     if !bad {
                         break;
                     }
-                }*/
-                if true {
+                }
+                if bad {
                     if numcontacts == 1 {
                         clip_velocity(&mut v, &contacts[0]);
                     } else if numcontacts == 2 {
+                        let movedir = na::normalize(&v);
                         let crease = na::cross(&contacts[0], &contacts[1]);
                         v = crease * na::dot(&v, &crease);
+                        v = v * (1.0 + 0.5 * na::dot(&movedir, &contacts[0])); 
                     } else {
                         // stuck in corner
                         v = na::zero();
                     }
+                }
+                if na::dot(&v, &pl.vel) < 0.0 || na::norm(&v) < 0.1 {
+                    v = na::zero(); 
                 }
             } else {
                 pl.pos = pl.pos + v * dt;
@@ -218,7 +224,8 @@ fn plane_matters(vel: &na::Vec3<f32>, norm: &na::Vec3<f32>) -> bool {
 }
 
 fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>) {
-    let mut d = na::dot(vel, norm);
-    *vel = *vel - (*norm * d * 1.01);
+    let d = na::dot(vel, norm);
+    let d = na::abs(&d);
+    *vel = *vel - (*norm * d * 1.0);
 }
 
