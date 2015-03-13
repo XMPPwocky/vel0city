@@ -226,6 +226,6 @@ fn plane_matters(vel: &na::Vec3<f32>, norm: &na::Vec3<f32>) -> bool {
 fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>) {
     let d = na::dot(vel, norm);
     let d = na::abs(&d);
-    *vel = *vel - (*norm * d * 1.0);
+    *vel = *vel - (*norm * d * 1.01);
 }
 
