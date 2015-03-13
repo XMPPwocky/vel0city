@@ -205,7 +205,7 @@ impl Tree {
             return self.get_leaf(nodeidx).is_solid();
         }
 
-        if start > end {
+        if start >= end {
             return false;
         }
 
@@ -228,15 +228,18 @@ impl Tree {
                 self.cast_ray_recursive(&ray, neg, (start, end), (startpos, endpos), visitor) 
         } else if na::approx_eq(&d1, &d2) { 
             false
-            //self.cast_ray_recursive(&ray, pos, (start, end), (startpos, endpos), visitor) 
+                /*
+            self.cast_ray_recursive(&ray, pos, (start, end), (startpos, endpos), visitor) 
+                || self.cast_ray_recursive(&ray, neg, (start, end), (startpos, endpos), visitor) 
+                */
         } else {
 
             let td = d2 - d1;
-            let (mut ns, mut fs);
+            let (ns, fs);
             let coincident;
             if d1 < d2 {  
                 coincident = true;
-                ns = (d1 + EPS + pad) / td;
+                ns = (d1 - EPS + pad) / td;
                 fs = (d1 - EPS - pad) / td;
             } else if d1 > d2 {
                 coincident = false;
@@ -245,11 +248,12 @@ impl Tree {
             } else {
                 unreachable!();
             };
-            let ns = na::clamp(ns, 0.0, 1.0);
-            let fs = na::clamp(fs, 0.0, 1.0);
             
             let ns = start + (end - start) * ns;
             let fs = start + (end - start) * fs;
+
+            let ns = na::clamp(ns, 0.0, 1.0);
+            let fs = na::clamp(fs, 0.0, 1.0);
 
             let (near, far) = if coincident {
                 (neg, pos) 

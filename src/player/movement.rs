@@ -181,7 +181,7 @@ struct RelevantPlanesVisitor {
 }
 impl PlaneCollisionVisitor for RelevantPlanesVisitor {
     fn visit_plane(&mut self, plane: &Plane, castresult: &CastResult) {
-        let cnorm = if na::dot(&plane.norm, &self.pos) > plane.dist {
+        let cnorm = if na::dot(&plane.norm, &self.pos) >= plane.dist {
             plane.norm * -1.0
         } else {
             plane.norm
