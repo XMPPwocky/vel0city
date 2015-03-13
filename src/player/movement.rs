@@ -131,10 +131,14 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                     numcontacts = 1;
                     pl.pos = pl.pos + (v * dt * toi);
                     dt = dt * (1.0 - toi);
+                    if toi >= 1.0 {
+                        break;
+                    }
                 } else {
                     numcontacts += 1;
                 }
                 contacts[numcontacts - 1] = norm;
+                println!("{:?}", &contacts[0..numcontacts]);
                 v = pl.vel;
                 /*
                 for i in 0..numcontacts {
