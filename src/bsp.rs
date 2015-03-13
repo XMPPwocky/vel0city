@@ -227,10 +227,9 @@ impl Tree {
         } else if d1 < -(pad + 0.) && d2 < -(pad + 0.) { 
                 self.cast_ray_recursive(&ray, neg, (start, end), (startpos, endpos), visitor) 
         } else if na::approx_eq(&d1, &d2) { 
-            false
-                /*
             self.cast_ray_recursive(&ray, pos, (start, end), (startpos, endpos), visitor) 
-                || self.cast_ray_recursive(&ray, neg, (start, end), (startpos, endpos), visitor) 
+                /*
+                self.cast_ray_recursive(&ray, neg, (start, end), (startpos, endpos), visitor) 
                 */
         } else {
 
