@@ -227,7 +227,8 @@ impl Tree {
         } else if d1 < -(pad + 0.) && d2 < -(pad + 0.) { 
                 self.cast_ray_recursive(&ray, neg, (start, end), (startpos, endpos), visitor) 
         } else if na::approx_eq(&d1, &d2) { 
-            self.cast_ray_recursive(&ray, pos, (start, end), (startpos, endpos), visitor) 
+            false
+            //self.cast_ray_recursive(&ray, pos, (start, end), (startpos, endpos), visitor) 
                 /*
                 self.cast_ray_recursive(&ray, neg, (start, end), (startpos, endpos), visitor) 
                 */
@@ -242,7 +243,7 @@ impl Tree {
                 fs = (d1 + EPS - pad) / td;
             } else if d1 > d2 {
                 coincident = false;
-                ns = (d1 + EPS - pad) / td;
+                ns = (d1 - EPS - pad) / td;
                 fs = (d1 - EPS + pad) / td;
             } else {
                 unreachable!();
