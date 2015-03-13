@@ -127,7 +127,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                     hit_floor = true;
                 }
 
-                if toi >= 0.0 {
+                if toi > 0.0 {
                     numcontacts = 1;
                     pl.pos = pl.pos + (v * dt * toi);
                     dt = dt * (1.0 - toi);

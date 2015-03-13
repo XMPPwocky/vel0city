@@ -239,8 +239,8 @@ impl Tree {
             let coincident;
             if d1 < d2 {  
                 coincident = true;
-                ns = (d1 - EPS + pad) / td;
-                fs = (d1 - EPS - pad) / td;
+                ns = (d1 + EPS + pad) / td;
+                fs = (d1 + EPS - pad) / td;
             } else if d1 > d2 {
                 coincident = false;
                 ns = (d1 + EPS - pad) / td;
