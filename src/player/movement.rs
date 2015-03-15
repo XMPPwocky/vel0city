@@ -70,7 +70,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.vel = dir * newspeed;
         }
 
-        let horizvel = na::Vec3::new(pl.vel.x, 0.0, pl.vel.z);
+        let horizvel = na::Vec3::new(pl.vel.x, pl.vel.y, pl.vel.z);
         let wishspeed = na::clamp(na::norm(&input.wishvel), 0.0, speedcap);
         if !na::approx_eq(&wishspeed, &0.0) { 
             let movedir = na::normalize(&input.wishvel);
