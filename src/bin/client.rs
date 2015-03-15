@@ -80,11 +80,15 @@ fn main() {
     let winsize = display.get_window().unwrap().get_outer_size().unwrap();
     client.input.cursorpos = (winsize.0 as i32 / 2, winsize.1 as i32 / 2);
 
+    let tick = 1.0/128.0;
     let mut lasttime = clock_ticks::precise_time_s();
+    let mut accumtime = 0.0;
     while !display.is_closed() {
         let curtime = clock_ticks::precise_time_s();
         let frametime = curtime - lasttime;
+        accumtime += frametime;
         lasttime = curtime;
+        println!("{}FPS", 1.0 / frametime);
         
         let win = display.get_window().unwrap();
         for ev in win.poll_events() {
@@ -101,7 +105,10 @@ fn main() {
 
         let mi = client.input.make_moveinput(&game.movesettings);
 
-        vel0city::player::movement::move_player(&mut game, 0, &mi, frametime as f32);
+        while accumtime > tick {
+            accumtime -= tick;
+            vel0city::player::movement::move_player(&mut game, 0, &mi, tick as f32);
+        }
 
         let mut target = display.draw();
         target.clear_color_and_depth((0.0, 0.0, 0.1, 0.0), 1.0);
