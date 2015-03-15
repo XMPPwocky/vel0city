@@ -175,30 +175,21 @@ impl Tree {
         const EPS: f32 = 1.0/16.0;
 
         // How does the ray interact with this plane?
-        if d1 >= (pad - EPS) && d2 >= (pad - EPS) {
+        if d1 >= pad && d2 >= pad {
             // Then just check the front subtree.
             self.cast_ray_recursive(&ray, pos, (start, end), (startpos, endpos), visitor) 
-        } else if d1 <= -(pad - EPS) && d2 <= -(pad - EPS) { 
+        } else if d1 <= -pad && d2 <= -pad {
                 self.cast_ray_recursive(&ray, neg, (start, end), (startpos, endpos), visitor) 
         } else if na::approx_eq(&d1, &d2) { 
             self.cast_ray_recursive(&ray, pos, (start, end), (startpos, endpos), visitor) 
         ||        self.cast_ray_recursive(&ray, neg, (start, end), (startpos, endpos), visitor) 
         } else {
 
-            let td = d2 - d1;
-            let (ns, fs);
-            let coincident;
-            if d1 < d2 {  
-                coincident = true;
-                ns = (d1 + EPS + pad) / td;
-                fs = (d1 + EPS - pad) / td;
-            } else if d1 > d2 {
-                coincident = false;
-                ns = (d1 - EPS - pad) / td;
-                fs = (d1 - EPS + pad) / td;
-            } else {
-                unreachable!();
-            };
+            let td = na::abs(&(d2 - d1));
+            let coincident = d1 < d2;
+            let d = na::abs(&d1);
+            let ns = (d - EPS + pad) / td;
+            let fs = (d - EPS - pad) / td;
             
             let ns = start + (end - start) * ns;
             let fs = start + (end - start) * fs;
@@ -218,13 +209,19 @@ impl Tree {
             let nmid = (startpos.to_vec() + ray.dir * ns).to_pnt();
             let fmid = (startpos.to_vec() + ray.dir * fs).to_pnt();
 
+            let cnorm = if d1 < 0.0 {
+                plane.norm * -1.0
+            } else {
+                plane.norm * 1.0
+            };
+
             let mut hit = false;
-            if self.cast_ray_recursive(ray, far, farbounds, (fmid, endpos), visitor) {
-                visitor.visit_plane(&plane, &CastResult { pos: fmid, norm: plane.norm, toi: fs });
-                hit = true;
-            }
             if self.cast_ray_recursive(ray, near, nearbounds, (startpos, nmid), visitor) {
                 //visitor.visit_plane(&plane, &CastResult { pos: nmid, norm: plane.norm, toi: ns });
+                hit = true;
+            }
+            if !hit && self.cast_ray_recursive(ray, far, farbounds, (fmid, endpos), visitor) {
+                visitor.visit_plane(&plane, &CastResult { pos: fmid, norm: cnorm, toi: fs });
                 hit = true;
             }
 

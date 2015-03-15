@@ -124,14 +124,13 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             game.map.bsp.cast_ray_visitor(&moveray, &mut vis);
 
             if let Some(bsp::cast::CastResult { toi, norm, pos }) = vis.best {
-                if norm.y < -0.8 {
+                if norm.y > 0.8 {
                     hit_floor = true;
                 }
 
                 if toi > 0.0 {
-                    println!("TOI TOI TOI");
                     numcontacts = 1;
-                    pl.pos = pos; 
+                    pl.pos = pl.pos + (v * toi * dt); 
                     dt = dt * (1.0 - toi);
                     if toi >= 1.0 {
                         break;
@@ -140,13 +139,13 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                     numcontacts += 1;
                 }
                 contacts[numcontacts - 1] = norm;
-                v = pl.vel;
+                //v = pl.vel;
                 let mut bad = false;
                 for i in 0..numcontacts {
                     clip_velocity(&mut v, &contacts[i]); 
                     bad = false;
                     for j in (0..numcontacts).filter(|&j| j != i) {
-                        if na::dot(&contacts[j], &v) > 0.0 {
+                        if na::dot(&contacts[j], &v) < 0.0 {
                             bad = true; 
                             break;
                         }
@@ -162,13 +161,13 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                         let movedir = na::normalize(&v);
                         let crease = na::cross(&contacts[0], &contacts[1]);
                         v = crease * na::dot(&v, &crease);
-                        v = v * (1.0 + 0.5 * na::dot(&movedir, &contacts[0])); 
+                        //v = v * (1.0 + 0.5 * na::dot(&movedir, &contacts[0])); 
                     } else {
                         // stuck in corner
                         v = na::zero();
                     }
                 }
-                if na::dot(&v, &pl.vel) < 0.0 || na::norm(&v) < 0.1 {
+                if na::dot(&v, &pl.vel) < 0.0 {
                     v = na::zero(); 
                 }
             } else {
@@ -192,30 +191,15 @@ struct RelevantPlanesVisitor {
 }
 impl PlaneCollisionVisitor for RelevantPlanesVisitor {
     fn visit_plane(&mut self, plane: &Plane, castresult: &CastResult) {
-        let cnorm = if na::dot(&plane.norm, &self.pos) >= plane.dist {
-            plane.norm * -1.0
-        } else {
-            plane.norm
-        };
-
-        if !plane_matters(&self.vel, &cnorm) {
-            return;
-        }
-
-        if let Some(CastResult { toi: best_toi, .. }) = self.best {
-            if castresult.toi <= best_toi {
-                    self.best = Some(
-                        CastResult {
-                            norm: cnorm,
-                            .. *castresult
-                        });
+        if let Some(CastResult { toi: best_toi, norm, .. }) = self.best {
+            if castresult.toi < best_toi {
+                self.best = Some(*castresult);
             }
+            /*if castresult.toi == best_toi {
+                self.best = Some(*castresult);
+            }*/
         } else {
-            self.best = Some(
-                CastResult {
-                    norm: cnorm,
-                    .. *castresult
-                });
+            self.best = Some(*castresult);
         }
     }
     fn should_visit_both(&self) -> bool { false }
@@ -226,7 +210,6 @@ fn plane_matters(vel: &na::Vec3<f32>, norm: &na::Vec3<f32>) -> bool {
 
 fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>) {
     let d = na::dot(vel, norm);
-    let d = na::abs(&d);
     *vel = *vel - (*norm * d * 1.01);
 }
 
