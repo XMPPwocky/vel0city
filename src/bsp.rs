@@ -224,7 +224,7 @@ impl Tree {
                 hit = true;
             }
             if self.cast_ray_recursive(ray, near, nearbounds, (startpos, nmid), visitor) {
-                visitor.visit_plane(&plane, &CastResult { pos: nmid, norm: plane.norm, toi: ns });
+                //visitor.visit_plane(&plane, &CastResult { pos: nmid, norm: plane.norm, toi: ns });
                 hit = true;
             }
 

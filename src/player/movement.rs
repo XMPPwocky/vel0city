@@ -124,11 +124,12 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             game.map.bsp.cast_ray_visitor(&moveray, &mut vis);
 
             if let Some(bsp::cast::CastResult { toi, norm, pos }) = vis.best {
-                if norm.y < -0.7 {
+                if norm.y < -0.8 {
                     hit_floor = true;
                 }
 
                 if toi > 0.0 {
+                    println!("TOI TOI TOI");
                     numcontacts = 1;
                     pl.pos = pos; 
                     dt = dt * (1.0 - toi);
@@ -202,7 +203,7 @@ impl PlaneCollisionVisitor for RelevantPlanesVisitor {
         }
 
         if let Some(CastResult { toi: best_toi, .. }) = self.best {
-            if castresult.toi < best_toi {
+            if castresult.toi <= best_toi {
                     self.best = Some(
                         CastResult {
                             norm: cnorm,

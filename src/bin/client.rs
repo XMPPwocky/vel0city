@@ -112,7 +112,6 @@ fn main() {
                                       &mut target);
         target.finish();
         let pv = game.players[0].vel;
-        println!("Speed: {}", na::norm(&na::Vec2::new(pv.x, pv.z)));
     }
         
 }
