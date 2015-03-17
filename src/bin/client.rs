@@ -59,7 +59,7 @@ fn main() {
     drawparams.depth_test = glium::DepthTest::IfLess;
     drawparams.depth_write = true;
 
-    let proj = na::Persp3::new(x as f32 / y as f32, 90.0, 0.001, 4096.0).to_mat();
+    let proj = na::Persp3::new(x as f32 / y as f32, 90.0, 0.1, 4096.0).to_mat();
 
     let mut game = vel0city::Game {
         movesettings: std::default::Default::default(),
@@ -74,7 +74,7 @@ fn main() {
         map: vel0city::map::single_plane_map()
     };
 
-    let asset = assets::load_bin_asset("test.bsp").unwrap();
+    let asset = assets::load_bin_asset("maps/test.bsp").unwrap();
     let mapmodel = vel0city::qbsp_import::import_graphics_model(&asset, &display).unwrap();
     
     let winsize = display.get_window().unwrap().get_outer_size().unwrap();
@@ -88,7 +88,7 @@ fn main() {
         let frametime = curtime - lasttime;
         accumtime += frametime;
         lasttime = curtime;
-        println!("{}FPS", 1.0 / frametime);
+        //println!("{}FPS", 1.0 / frametime);
         
         let win = display.get_window().unwrap();
         for ev in win.poll_events() {

@@ -53,13 +53,8 @@ pub struct InnerNode {
 
 #[derive(Debug)]
 pub struct Leaf {
-    pub solid: bool,
-}
-
-impl Leaf {
-    fn is_solid(&self) -> bool {
-        self.solid
-    }
+    pub leafbrush: i32,
+    pub n_leafbrushes: i32,
 }
 
 pub trait PlaneCollisionVisitor {
@@ -96,12 +91,22 @@ impl PlaneCollisionVisitor for JustFirstPlaneVisitor {
     }
 }
 
+#[derive(Debug)]
+pub struct Brush {
+    pub sides: Vec<BrushSide>
+}
+
+#[derive(Debug)]
+pub struct BrushSide {
+    pub plane: Plane,
+    pub texture: u32
+}
 
 #[derive(Debug)]
 pub struct Tree {
     pub inodes: Vec<InnerNode>,
     pub leaves: Vec<Leaf>,
-    pub root: NodeIndex
+    pub brushes: Vec<Brush>,
 }
 impl Tree {
     /// Looks up a leaf by (negative) NodeIndex.
@@ -109,35 +114,9 @@ impl Tree {
         &self.leaves[(-nodeidx - 1) as usize]
     }
 
-    /// Is this point solid?
-    pub fn contains_point(&self, point: &na::Pnt3<f32>) -> bool {
-        self.contains_point_recursive(point, self.root)
-    }
-
-    /// Ye Olde Binarye Searche
-    fn contains_point_recursive(&self, point: &na::Pnt3<f32>, nodeidx: NodeIndex) -> bool {
-        let InnerNode { ref plane, pos, neg } = self.inodes[nodeidx as usize];
-        
-        let dir = *point - plane.point_on(); 
-        if na::dot(&dir, &plane.norm) > 0.0 {
-            if pos < 0 {
-                self.get_leaf(pos).is_solid() 
-            } else {
-                self.contains_point_recursive(point, pos)
-            }
-        } else {
-            if neg < 0 {
-                self.get_leaf(neg).is_solid() 
-            } else {
-                self.contains_point_recursive(point, neg)
-            }
-        }
-    }
-
-    /// Casts a ray against the tree, returning a CastResult if it hit anything.
     pub fn cast_ray(&self, ray: &Ray) -> Option<CastResult> {
         let mut visitor = JustFirstPlaneVisitor::new();
-        self.cast_ray_recursive(ray, self.root, (0.0, 1.0), (ray.orig, (ray.orig.to_vec() + ray.dir).to_pnt()), &mut visitor);
+        self.cast_ray_recursive(ray, 0, (0.0, 1.0), (ray.orig, (ray.orig.to_vec() + ray.dir).to_pnt()), &mut visitor);
         visitor.best
     }
 
@@ -146,7 +125,7 @@ impl Tree {
     /// collision manifold.
     pub fn cast_ray_visitor<V>(&self, ray: &Ray, visitor: &mut V)
     where V: PlaneCollisionVisitor {
-        self.cast_ray_recursive(ray, self.root, (0.0, 1.0), (ray.orig, (ray.orig.to_vec() + ray.dir).to_pnt()), visitor);
+        self.cast_ray_recursive(ray, 0, (0.0, 1.0), (ray.orig, (ray.orig.to_vec() + ray.dir).to_pnt()), visitor);
     }
 
     /// Takes a ray, bounded by [start, end) (from its origin to its direction)
@@ -156,7 +135,7 @@ impl Tree {
     fn cast_ray_recursive<V>(&self, ray: &Ray, nodeidx: NodeIndex, (start, end): (f32, f32), (startpos, endpos): (na::Pnt3<f32>, na::Pnt3<f32>), visitor: &mut V) -> bool
     where V: PlaneCollisionVisitor {
         if nodeidx < 0 {
-            return self.get_leaf(nodeidx).is_solid();
+            return false;
         }
 
         if start >= end {
@@ -234,7 +213,7 @@ impl Tree {
 /// phase of the moon, but there is guaranteed to be a "floor" at z=0.
 pub fn test_tree() -> Tree {
     use assets;
-    let asset = assets::load_bin_asset("test.bsp").unwrap();
+    let asset = assets::load_bin_asset("maps/test.bsp").unwrap();
     ::qbsp_import::import_collision(&asset).unwrap()
 }
 

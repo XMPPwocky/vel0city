@@ -32,7 +32,7 @@ pub struct View {
 pub fn draw_view(game: &Game,
                  view: &View,
                  playermodel: &Model,
-                 mapmodel: &Model,
+                 mapmodels: &[Model],
                  frame: &mut glium::Frame) { 
     
     /*{
@@ -48,21 +48,23 @@ pub fn draw_view(game: &Game,
                    &view.drawparams).unwrap()
     }*/
 
-    let samp = glium::uniforms::Sampler::new(&mapmodel.texture)
-        .anisotropy(8)
-        .magnify_filter(glium::uniforms::MagnifySamplerFilter::Linear)
-        .minify_filter(glium::uniforms::MinifySamplerFilter::LinearMipmapLinear);
 
-    let uniforms = uniform! { 
-        transform: *(view.w2s).as_array(),
-        color: samp
-    };
+    for mapmodel in mapmodels {
+        let samp = glium::uniforms::Sampler::new(&mapmodel.texture)
+            .anisotropy(8)
+            .magnify_filter(glium::uniforms::MagnifySamplerFilter::Linear)
+            .minify_filter(glium::uniforms::MinifySamplerFilter::LinearMipmapLinear);
 
-    frame.draw(&mapmodel.mesh,
-               &mapmodel.indices,
-               &mapmodel.program,
-               &uniforms,
-               &view.drawparams).unwrap();
+        let uniforms = uniform! { 
+            transform: *(view.w2s).as_array(),
+            color: samp
+        };
+        frame.draw(&mapmodel.mesh,
+                   &mapmodel.indices,
+                   &mapmodel.program,
+                   &uniforms,
+                   &view.drawparams).unwrap();
+    }
      
     /*
     for player in &game.players {
