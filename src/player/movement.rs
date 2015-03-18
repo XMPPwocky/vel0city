@@ -28,7 +28,14 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
 
         if input.jump && pl.flags.contains(PLAYER_ONGROUND) { 
             if !pl.flags.contains(PLAYER_JUMPED) {
-                pl.vel.y = game.movesettings.jumpspeed;
+                let jspeed = game.movesettings.jumpspeed;
+
+                pl.vel.y = if pl.vel.y > jspeed {
+                    pl.vel.y + jspeed
+                } else {
+                    jspeed
+                };
+
                 pl.flags.remove(PLAYER_ONGROUND);
             }
             //pl.flags.insert(PLAYER_JUMPED);
@@ -75,7 +82,8 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             let movedir = na::normalize(&input.wishvel);
 
             let curspeed = na::dot(&horizvel, &movedir); 
-            let maxdelta = accel * wishspeed * dt;
+            // movespeed, not speedcap, or airaccel is way too low
+            let maxdelta = accel * game.movesettings.movespeed * dt;
             let addspeed = na::clamp((wishspeed - curspeed), 0.0, maxdelta);
             pl.vel = pl.vel + (movedir * addspeed);
         }
@@ -117,7 +125,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             let cast = game.map.bsp.cast_ray(&moveray);
 
             if let Some(bsp::cast::CastResult { toi, norm}) = cast {
-                if norm.y > 0.8 {
+                if norm.y > 0.7 {
                     hit_floor = true;
                 }
 
@@ -154,13 +162,13 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                         let movedir = na::normalize(&v);
                         let crease = na::cross(&contacts[0], &contacts[1]);
                         v = crease * na::dot(&v, &crease);
-                        //v = v * (1.0 + 0.5 * na::dot(&movedir, &contacts[0])); 
+                        v = v * (1.0 + 0.5 * na::dot(&movedir, &contacts[0])); 
                     } else {
                         // stuck in corner
                         v = na::zero();
                     }
                 }
-                if na::dot(&v, &pl.vel) < 0.0 {
+                if na::dot(&v, &pl.vel) < 0.0 || na::norm(&v) < 0.75 {
                     v = na::zero(); 
                 }
             } else {
