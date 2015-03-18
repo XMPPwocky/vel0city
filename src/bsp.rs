@@ -8,7 +8,7 @@ use self::cast::{
 };
 
 
-const EPS: f32 = 1.0/64.0;
+const EPS: f32 = 1.0/16.0;
 
 fn signcpy(n: f32, from: f32) -> f32 {
     if from >= 0.0 {
@@ -71,6 +71,7 @@ impl Brush {
         let mut norm = na::zero();
         for side in &self.sides {
             if !(side.contents & 1 == 1) {
+                //println!("skip nosolid");
                 continue;
             }
 
@@ -111,7 +112,12 @@ impl Brush {
                     norm: norm
                 })
             }
-        }
+        } else if sf > -1.0 {
+            return Some(CastResult {
+                toi: 0.0,
+                norm: norm
+            })
+        };
         None
     }
 }
@@ -193,10 +199,10 @@ impl Tree {
 
 
         // How does the ray interact with this plane?
-        if d1 > pad && d2 > pad {
+        if d1 > (pad + 1.0) && d2 > (pad + 1.0) {
             // Then just check the front subtree.
             self.cast_ray_recursive(&ray, pos, (start, end), (startpos, endpos))
-        } else if d1 < -pad && d2 < -pad {
+        } else if d1 < -(pad + 1.0) && d2 < -(pad + 1.0) {
             self.cast_ray_recursive(&ray, neg, (start, end), (startpos, endpos))
         } else if d1 == d2 { 
             combine_results(self.cast_ray_recursive(&ray, pos, (start, end), (startpos, endpos)), 
@@ -211,8 +217,8 @@ impl Tree {
                 fs = (d1 + pad + EPS) / td;
             } else {
                 coincident = false;
-                ns = (d1 + pad - EPS) / td;
-                fs = (d1 - pad - EPS) / td;
+                ns = (d1 + pad + EPS) / td;
+                fs = (d1 - pad + EPS) / td;
             }
             
             let ns = na::clamp(ns, 0.0, 1.0);
