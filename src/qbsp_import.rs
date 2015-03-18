@@ -22,9 +22,14 @@ pub fn import_collision(data: &[u8]) -> Result<bsp::Tree, BspError> {
     let planes = try!(read_planes(directory.planes));
     let nodes = try!(read_nodes(directory.nodes, &planes));
     let leaves = try!(read_leaves(directory.leaves)); 
+    let textures = try!(read_textures(directory.textures));
+    let brushsides = try!(read_brushsides(directory.brushsides, &planes, &textures));
+    let brushes = try!(read_brushes(directory.brushes, &brushsides));
+    let leafbrushes = try!(read_leafbrushes(directory.leafbrushes));
 
     Ok(bsp::Tree {
-        brushes: vec![],
+        brushes: brushes,
+        leafbrushes: leafbrushes, 
         leaves: leaves,
         inodes: nodes,
     })
@@ -45,7 +50,6 @@ pub fn import_graphics_model(data: &[u8], display: &glium::Display) -> Result<Ve
     for face in faces {
         let &mut (ref mut verts, ref mut indices, _) = match texmap.entry(face.texture as usize) {
             Entry::Vacant(v) => {
-                println!("{:?}", textures[face.texture as usize].name);
                 let tex = assets::load_bin_asset(&(textures[face.texture as usize].name.clone() + ".png")).unwrap();
                 let tex = image::load(::std::old_io::BufReader::new(&tex), image::PNG).unwrap();
                 let tex = glium::Texture2d::new(display, tex);
@@ -60,7 +64,6 @@ pub fn import_graphics_model(data: &[u8], display: &glium::Display) -> Result<Ve
             let vert = &vertices[(face.vertex + *meshvert) as usize];
             let idx = verts.len();
             indices.push(idx as u32);
-            println!("{:?}", vert.texcoords);
             verts.push(graphics::Vertex {
                 position: [vert.position.x, vert.position.z, vert.position.y],
                 texcoords: [1.0 - vert.texcoords.x, 1.0 - vert.texcoords.y]
@@ -93,6 +96,9 @@ struct Directory<'a> {
     planes: &'a [u8],
     nodes: &'a [u8],
     leaves: &'a [u8],
+    leafbrushes: &'a [u8],
+    brushes: &'a [u8],
+    brushsides: &'a [u8],
     vertices: &'a [u8],
     meshverts: &'a [u8],
     faces: &'a [u8],
@@ -117,7 +123,19 @@ fn read_directory(data: &[u8]) -> byteorder::Result<Directory> {
     let leaves_offset = try!(cursor.read_u32::<LittleEndian>());
     let leaves_len = try!(cursor.read_u32::<LittleEndian>());
 
-    cursor.seek(SeekFrom::Current(8*5)).unwrap();
+    cursor.seek(SeekFrom::Current(8*1)).unwrap();
+    let leafbrushes_offset = try!(cursor.read_u32::<LittleEndian>());
+    let leafbrushes_len = try!(cursor.read_u32::<LittleEndian>());
+
+    cursor.seek(SeekFrom::Current(8*1)).unwrap();
+    let brushes_offset = try!(cursor.read_u32::<LittleEndian>());
+    let brushes_len = try!(cursor.read_u32::<LittleEndian>());
+
+    cursor.seek(SeekFrom::Current(0)).unwrap();
+    let brushsides_offset = try!(cursor.read_u32::<LittleEndian>());
+    let brushsides_len = try!(cursor.read_u32::<LittleEndian>());
+
+    cursor.seek(SeekFrom::Current(0)).unwrap();
     let vertices_offset = try!(cursor.read_u32::<LittleEndian>());
     let vertices_len = try!(cursor.read_u32::<LittleEndian>());
 
@@ -134,6 +152,9 @@ fn read_directory(data: &[u8]) -> byteorder::Result<Directory> {
         planes: &data[planes_offset as usize .. (planes_offset + planes_len) as usize],
         nodes: &data[nodes_offset as usize .. (nodes_offset + nodes_len) as usize], 
         leaves: &data[leaves_offset as usize .. (leaves_offset + leaves_len) as usize],
+        leafbrushes: &data[leafbrushes_offset as usize .. (leafbrushes_offset + leafbrushes_len) as usize],
+        brushes: &data[brushes_offset as usize .. (brushes_offset + brushes_len) as usize],
+        brushsides: &data[brushsides_offset as usize .. (brushsides_offset + brushsides_len) as usize],
         vertices: &data[vertices_offset as usize .. (vertices_offset + vertices_len) as usize], 
         meshverts: &data[meshverts_offset as usize .. (meshverts_offset + meshverts_len) as usize], 
         faces: &data[faces_offset as usize .. (faces_offset + faces_len) as usize], 
@@ -179,6 +200,40 @@ fn read_nodes(data: &[u8], planes: &[bsp::Plane]) -> byteorder::Result<Vec<bsp::
         .collect()
 }
 
+fn read_brushside(data: &[u8], planes: &[bsp::Plane], textures: &[Texture]) -> byteorder::Result<bsp::BrushSide> {
+    let mut cursor = Cursor::new(data);
+    let plane_id = try!(cursor.read_i32::<LittleEndian>());
+    let texture_id = try!(cursor.read_i32::<LittleEndian>());
+    let tex = &textures[texture_id as usize];
+    Ok(bsp::BrushSide {
+        plane: planes[plane_id as usize].clone(),
+        contents: tex.contents,
+        flags: tex.flags
+    })
+}
+
+fn read_brushsides(data: &[u8], planes: &[bsp::Plane], textures: &[Texture]) -> byteorder::Result<Vec<bsp::BrushSide>> {
+    data.chunks(8)
+        .map(|chunk| read_brushside(chunk, planes, textures))
+        .collect()
+}
+
+fn read_brushes(data: &[u8], brushsides: &[bsp::BrushSide]) -> byteorder::Result<Vec<bsp::Brush>> {
+    data.chunks(12)
+        .map(|chunk| read_brush(chunk, brushsides))
+        .collect()
+}
+
+fn read_brush(data: &[u8], brushsides: &[bsp::BrushSide]) -> byteorder::Result<bsp::Brush> {
+    let mut cursor = Cursor::new(data);
+    let brushside = try!(cursor.read_i32::<LittleEndian>());
+    let n_brushsides = try!(cursor.read_i32::<LittleEndian>());
+    Ok(bsp::Brush {
+        sides: brushsides[brushside as usize .. (brushside + n_brushsides) as usize].to_vec()
+    })
+}
+
+
 fn read_leaf(data: &[u8]) -> byteorder::Result<bsp::Leaf> {
     let mut cursor = Cursor::new(data);
     cursor.seek(SeekFrom::Start(40)).unwrap();
@@ -194,6 +249,15 @@ fn read_leaf(data: &[u8]) -> byteorder::Result<bsp::Leaf> {
 fn read_leaves(data: &[u8]) -> byteorder::Result<Vec<bsp::Leaf>> {
     data.chunks(48)
         .map(|chunk| read_leaf(chunk))
+        .collect()
+}
+
+fn read_leafbrushes(data: &[u8]) -> byteorder::Result<Vec<u32>> {
+    data.chunks(4)
+        .map(|chunk| {
+            let mut cursor = Cursor::new(chunk);
+            cursor.read_u32::<LittleEndian>()
+        })
         .collect()
 }
 

@@ -1,6 +1,5 @@
 use bsp;
 use bsp::Plane;
-use bsp::PlaneCollisionVisitor;
 use bsp::cast::CastResult;
 use player::{
     PlayerFlags,
@@ -115,15 +114,9 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                 halfextents: pl.halfextents
             };
 
-            let mut vis = RelevantPlanesVisitor { 
-                best: None,
-                vel: v,
-                pos: pl.pos.to_vec(),
-            };
+            let cast = game.map.bsp.cast_ray(&moveray);
 
-            game.map.bsp.cast_ray_visitor(&moveray, &mut vis);
-
-            if let Some(bsp::cast::CastResult { toi, norm, pos }) = vis.best {
+            if let Some(bsp::cast::CastResult { toi, norm}) = cast {
                 if norm.y > 0.8 {
                     hit_floor = true;
                 }
@@ -139,7 +132,8 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                     numcontacts += 1;
                 }
                 contacts[numcontacts - 1] = norm;
-                //v = pl.vel;
+                println!("{:?}", &contacts[..numcontacts]);
+                v = pl.vel;
                 let mut bad = false;
                 for i in 0..numcontacts {
                     clip_velocity(&mut v, &contacts[i]); 
@@ -176,36 +170,13 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             }
         }
         pl.vel = v;
+        println!("{:?}", pl.vel);
         if hit_floor {
             pl.flags.insert(PLAYER_ONGROUND)
         } else {
             pl.flags.remove(PLAYER_ONGROUND)
         }
     }
-}
-
-struct RelevantPlanesVisitor {
-    best: Option<CastResult>,
-    vel: na::Vec3<f32>,
-    pos: na::Vec3<f32>,
-}
-impl PlaneCollisionVisitor for RelevantPlanesVisitor {
-    fn visit_plane(&mut self, plane: &Plane, castresult: &CastResult) {
-        if let Some(CastResult { toi: best_toi, norm, .. }) = self.best {
-            if castresult.toi < best_toi {
-                self.best = Some(*castresult);
-            }
-            /*if castresult.toi == best_toi {
-                self.best = Some(*castresult);
-            }*/
-        } else {
-            self.best = Some(*castresult);
-        }
-    }
-    fn should_visit_both(&self) -> bool { false }
-}
-fn plane_matters(vel: &na::Vec3<f32>, norm: &na::Vec3<f32>) -> bool {
-    na::dot(vel, norm) > 0.0
 }
 
 fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>) {

@@ -7,6 +7,9 @@ use self::cast::{
     CastResult
 };
 
+
+const EPS: f32 = 1.0/64.0;
+
 fn signcpy(n: f32, from: f32) -> f32 {
     if from >= 0.0 {
         n
@@ -57,49 +60,84 @@ pub struct Leaf {
     pub n_leafbrushes: i32,
 }
 
-pub trait PlaneCollisionVisitor {
-    /// Visit a solid face.
-    fn visit_plane(&mut self, plane: &Plane, castresult: &CastResult);
-    
-    /// Recurse down both sides of a split?
-    fn should_visit_both(&self) -> bool {
-        false
-    }
-}
-
-struct JustFirstPlaneVisitor {
-    /// The first plane hit (as in, least TOI).
-    /// Initially None.
-    best: Option<CastResult>
-}
-impl JustFirstPlaneVisitor {
-    pub fn new() -> JustFirstPlaneVisitor {
-        JustFirstPlaneVisitor {
-            best: None
-        }
-    }
-}
-impl PlaneCollisionVisitor for JustFirstPlaneVisitor {
-    fn visit_plane(&mut self, plane: &Plane, castresult: &CastResult) {
-        if let Some(CastResult { toi: best_toi, .. }) = self.best {
-            if castresult.toi <= best_toi {
-                self.best = Some(*castresult);
-            }
-        } else {
-            self.best = Some(*castresult);
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct Brush {
     pub sides: Vec<BrushSide>
 }
+impl Brush {
+    pub fn cast_ray(&self, ray: &Ray) -> Option<CastResult> {
+        let mut sf = -1.0;
+        let mut ef = 1.0;
+        let mut norm = na::zero();
+        for side in &self.sides {
+            if !(side.contents & 1 == 1) {
+                continue;
+            }
 
-#[derive(Debug)]
+            let pad = na::abs(&(ray.halfextents.x * side.plane.norm.x)) +
+                na::abs(&(ray.halfextents.y * side.plane.norm.y)) + 
+                na::abs(&(ray.halfextents.z * side.plane.norm.z));
+
+            let startpos = (ray.orig.to_vec()).to_pnt();
+            let endpos = (ray.orig.to_vec() + ray.dir).to_pnt();
+
+            let d1 = side.plane.dist_to_point(&startpos) - pad;
+            let d2 = side.plane.dist_to_point(&endpos) - pad;
+            if d1 > 0.0 && (d2 >= EPS || d2 >= d1) {
+                return None;
+            } else if d1 <= 0.0 && d2 <= 0.0 {
+                continue;
+            }
+            if d1 > d2 {
+                let frac = (d1 - EPS) / (d1 - d2);
+                let frac = na::clamp(frac, 0.0, 1.0);
+                if frac > sf {
+                    sf = frac;
+                    norm = side.plane.norm;
+                }
+            } else {
+                let frac = (d1 + EPS) / (d1 - d2);
+                let frac = na::clamp(frac, 0.0, 1.0);
+                if frac < ef {
+                    ef = frac;
+                }
+            }
+        }
+        if sf <= ef {
+            if sf > -1.0 {
+                let frac = na::clamp(sf, 0.0, 1.0);
+                return Some(CastResult {
+                    toi: frac,
+                    norm: norm
+                })
+            }
+        }
+        None
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct BrushSide {
     pub plane: Plane,
-    pub texture: u32
+    pub flags: i32,
+    pub contents: i32,
+}
+
+fn combine_results(a: Option<CastResult>, b: Option<CastResult>) -> Option<CastResult> {
+    if let Some(a) = a {
+        match b {
+            Some(b) => {
+                if a.toi <= b.toi {
+                    Some(a)
+                } else {
+                    Some(b)
+                }
+            },
+            None => Some(a)
+        }
+    } else {
+        b
+    }
 }
 
 #[derive(Debug)]
@@ -107,6 +145,7 @@ pub struct Tree {
     pub inodes: Vec<InnerNode>,
     pub leaves: Vec<Leaf>,
     pub brushes: Vec<Brush>,
+    pub leafbrushes: Vec<u32>,
 }
 impl Tree {
     /// Looks up a leaf by (negative) NodeIndex.
@@ -115,32 +154,33 @@ impl Tree {
     }
 
     pub fn cast_ray(&self, ray: &Ray) -> Option<CastResult> {
-        let mut visitor = JustFirstPlaneVisitor::new();
-        self.cast_ray_recursive(ray, 0, (0.0, 1.0), (ray.orig, (ray.orig.to_vec() + ray.dir).to_pnt()), &mut visitor);
-        visitor.best
+        self.cast_ray_recursive(ray, 0, (0.0, 1.0), (ray.orig, (ray.orig.to_vec() + ray.dir).to_pnt()))
     }
 
-    /// Casts a ray against the tree, using a custom `PlaneCollisionVisitor`.
-    /// You probably do not need this, unless you need access to a full
-    /// collision manifold.
-    pub fn cast_ray_visitor<V>(&self, ray: &Ray, visitor: &mut V)
-    where V: PlaneCollisionVisitor {
-        self.cast_ray_recursive(ray, 0, (0.0, 1.0), (ray.orig, (ray.orig.to_vec() + ray.dir).to_pnt()), visitor);
-    }
-
-    /// Takes a ray, bounded by [start, end) (from its origin to its direction)
-    /// Tests that against the node nodeidx, and returns true if the ray hit
-    /// the tree (starting at this node) within the bounds. If so, it also
-    /// invokes the PlaneCollisionVisitor `visitor`.
-    fn cast_ray_recursive<V>(&self, ray: &Ray, nodeidx: NodeIndex, (start, end): (f32, f32), (startpos, endpos): (na::Pnt3<f32>, na::Pnt3<f32>), visitor: &mut V) -> bool
-    where V: PlaneCollisionVisitor {
+    fn cast_ray_recursive(&self,
+                          ray: &Ray,
+                          nodeidx: NodeIndex,
+                          (start, end): (f32, f32),
+                          (startpos, endpos): (na::Pnt3<f32>, na::Pnt3<f32>))
+                                               -> Option<CastResult> 
+    {
         if nodeidx < 0 {
-            return false;
+            // check brushes for this leaf
+            let leaf = self.get_leaf(nodeidx);
+
+            let mut best = None;
+            for &leafbrush in &self.leafbrushes[leaf.leafbrush as usize..(leaf.leafbrush + leaf.n_leafbrushes) as usize] {
+                let brush = &self.brushes[leafbrush as usize];
+                let result = brush.cast_ray(ray); 
+                best = combine_results(result, best);
+            }
+            return best ;
         }
 
+        /*
         if start >= end {
-            return false;
-        }
+            return None;
+        }*/
 
         let InnerNode { ref plane, pos, neg } = self.inodes[nodeidx as usize];
         
@@ -151,30 +191,35 @@ impl Tree {
             na::abs(&(ray.halfextents.y * plane.norm.y)) + 
             na::abs(&(ray.halfextents.z * plane.norm.z));
 
-        const EPS: f32 = 1.0/16.0;
 
         // How does the ray interact with this plane?
-        if d1 >= pad && d2 >= pad {
+        if d1 > pad && d2 > pad {
             // Then just check the front subtree.
-            self.cast_ray_recursive(&ray, pos, (start, end), (startpos, endpos), visitor) 
-        } else if d1 <= -pad && d2 <= -pad {
-                self.cast_ray_recursive(&ray, neg, (start, end), (startpos, endpos), visitor) 
-        } else if na::approx_eq(&d1, &d2) { 
-            self.cast_ray_recursive(&ray, pos, (start, end), (startpos, endpos), visitor) 
-        ||        self.cast_ray_recursive(&ray, neg, (start, end), (startpos, endpos), visitor) 
+            self.cast_ray_recursive(&ray, pos, (start, end), (startpos, endpos))
+        } else if d1 < -pad && d2 < -pad {
+            self.cast_ray_recursive(&ray, neg, (start, end), (startpos, endpos))
+        } else if d1 == d2 { 
+            combine_results(self.cast_ray_recursive(&ray, pos, (start, end), (startpos, endpos)), 
+        self.cast_ray_recursive(&ray, neg, (start, end), (startpos, endpos)))
         } else {
-
-            let td = na::abs(&(d2 - d1));
-            let coincident = d1 < d2;
-            let d = na::abs(&d1);
-            let ns = (d - EPS + pad) / td;
-            let fs = (d - EPS - pad) / td;
+            let td = d2 - d1;
+            let coincident;
+            let (ns, fs);
+            if d1 < d2 {
+                coincident = true;
+                ns = (d1 - pad + EPS) / td;
+                fs = (d1 + pad + EPS) / td;
+            } else {
+                coincident = false;
+                ns = (d1 + pad - EPS) / td;
+                fs = (d1 - pad - EPS) / td;
+            }
             
-            let ns = start + (end - start) * ns;
-            let fs = start + (end - start) * fs;
-
             let ns = na::clamp(ns, 0.0, 1.0);
             let fs = na::clamp(fs, 0.0, 1.0);
+
+            let ns = start + (end - start) * ns;
+            let fs = start + (end - start) * fs;
 
             let (near, far) = if coincident {
                 (neg, pos) 
@@ -188,23 +233,7 @@ impl Tree {
             let nmid = (startpos.to_vec() + ray.dir * ns).to_pnt();
             let fmid = (startpos.to_vec() + ray.dir * fs).to_pnt();
 
-            let cnorm = if d1 < 0.0 {
-                plane.norm * -1.0
-            } else {
-                plane.norm * 1.0
-            };
-
-            let mut hit = false;
-            if self.cast_ray_recursive(ray, near, nearbounds, (startpos, nmid), visitor) {
-                //visitor.visit_plane(&plane, &CastResult { pos: nmid, norm: plane.norm, toi: ns });
-                hit = true;
-            }
-            if !hit && self.cast_ray_recursive(ray, far, farbounds, (fmid, endpos), visitor) {
-                visitor.visit_plane(&plane, &CastResult { pos: fmid, norm: cnorm, toi: fs });
-                hit = true;
-            }
-
-            hit
+            combine_results(self.cast_ray_recursive(ray, near, nearbounds, (startpos, nmid)), self.cast_ray_recursive(ray, far, farbounds, (fmid, endpos)))
         }
     }
 }
@@ -229,7 +258,6 @@ pub mod cast {
 
     #[derive(Copy, Clone,Debug, PartialEq)]
     pub struct CastResult {
-        pub pos: na::Pnt3<f32>,
         /// Time of impact.
         pub toi: f32,
         /// Normal of the plane it hit. 

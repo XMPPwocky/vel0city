@@ -59,7 +59,7 @@ fn main() {
     drawparams.depth_test = glium::DepthTest::IfLess;
     drawparams.depth_write = true;
 
-    let proj = na::Persp3::new(x as f32 / y as f32, 90.0, 0.1, 4096.0).to_mat();
+    let proj = na::Persp3::new(x as f32 / y as f32, 90.0, 0.1, 8192.0).to_mat();
 
     let mut game = vel0city::Game {
         movesettings: std::default::Default::default(),
