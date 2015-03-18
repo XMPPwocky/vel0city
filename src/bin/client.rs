@@ -51,6 +51,8 @@ impl Client {
 #[cfg(not(test))]
 fn main() {
     let display = glutin::WindowBuilder::new()
+        // .with_vsync()
+        .with_title("vel0city".to_owned())
         .build_glium()
         .unwrap();
     let mut client = Client::new(&display);
@@ -96,7 +98,7 @@ fn main() {
         }
 
         let l = na::Iso3::new_with_rotmat(na::zero(), client.input.get_ang().to_rot()).inv().unwrap().to_homogeneous();
-        let v = na::Iso3::new((game.players[0].pos.to_vec() + na::Vec3 { y: vel0city::player::PLAYER_HALFEXTENTS.y * 0.5, ..na::zero() }) * -1.0, na::zero()).to_homogeneous();
+        let v = na::Iso3::new((game.players[0].pos.to_vec() + na::Vec3 { y: vel0city::player::PLAYER_HALFEXTENTS.y * 0.9, ..na::zero() }) * -1.0, na::zero()).to_homogeneous();
         //l.inv();
         let view = vel0city::graphics::View {
             w2s: proj * l * v,
