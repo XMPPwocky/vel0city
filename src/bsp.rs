@@ -65,7 +65,7 @@ pub struct Brush {
     pub sides: Vec<BrushSide>
 }
 impl Brush {
-    pub fn cast_ray(&self, ray: &Ray) -> Option<CastResult> {
+    pub fn cast_ray(&self, ray: &Ray, (start, end): (f32, f32)) -> Option<CastResult> {
         let mut sf = -1.0;
         let mut ef = 1.0;
         let mut norm = na::zero();
@@ -84,27 +84,25 @@ impl Brush {
 
             let d1 = side.plane.dist_to_point(&startpos) - pad;
             let d2 = side.plane.dist_to_point(&endpos) - pad;
-            if d1 >= 0.0 && d2 >= 0.0 { 
+            if d1 > 0.0 && (d2 >= d1 || d2 >= EPS) { 
                 return None;
             } else if d1 <= 0.0 && d2 <= 0.0 {
                 continue;
             }
             if d1 > d2 {
                 let frac = (d1 - EPS) / (d1 - d2);
-                let frac = na::clamp(frac, 0.0, 1.0);
                 if frac > sf {
-                    sf = frac;
+                    sf = na::clamp(frac, 0.0, 1.0);
                     norm = side.plane.norm;
                 }
             } else {
                 let frac = (d1 + EPS) / (d1 - d2);
-                let frac = na::clamp(frac, 0.0, 1.0);
                 if frac < ef {
-                    ef = frac;
+                    ef = na::clamp(frac, 0.0, 1.0);
                 }
             }
         }
-        if sf > -1.0 {
+        if sf >= start && sf <= end {
             if sf <= ef {
                 return Some(CastResult {
                     toi: sf,
@@ -168,6 +166,9 @@ impl Tree {
                           (startpos, endpos): (na::Pnt3<f32>, na::Pnt3<f32>))
                                                -> Option<CastResult> 
     {
+        if start >= end {
+            return None;
+        }
         if nodeidx < 0 {
             // check brushes for this leaf
             let leaf = self.get_leaf(nodeidx);
@@ -175,7 +176,7 @@ impl Tree {
             let mut best = None;
             for &leafbrush in &self.leafbrushes[leaf.leafbrush as usize..(leaf.leafbrush + leaf.n_leafbrushes) as usize] {
                 let brush = &self.brushes[leafbrush as usize];
-                let result = brush.cast_ray(ray); 
+                let result = brush.cast_ray(ray, (start, end)); 
                 best = combine_results(result, best);
             }
             return best ;
@@ -192,13 +193,13 @@ impl Tree {
 
 
         // How does the ray interact with this plane?
-        if d1 > (pad + 1.0) && d2 > (pad + 1.0) {
+        if d1 > (pad ) && d2 > (pad ) {
             // Then just check the front subtree.
             self.cast_ray_recursive(&ray, pos, (start, end), (startpos, endpos))
-        } else if d1 < -(pad + 1.0) && d2 < -(pad + 1.0) {
+        } else if d1 < -(pad ) && d2 < -(pad ) {
             self.cast_ray_recursive(&ray, neg, (start, end), (startpos, endpos))
         } else {
-            let td = d2 - d1;
+            let td = d1 - d2;
             let coincident;
             let (ns, fs);
             if d1 < d2 {

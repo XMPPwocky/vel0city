@@ -56,7 +56,7 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
                 clip_velocity(&mut v, &contacts[i]); 
                 bad = false;
                 for j in (0..numcontacts).filter(|&j| j != i) {
-                    if na::dot(&contacts[j], &v) <= 0.0 {
+                    if na::dot(&contacts[j], &v) < 0.0 {
                         bad = true; 
                         break;
                     }
@@ -69,6 +69,7 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
                 if numcontacts == 1 {
                     // nothing
                 } else if numcontacts == 2 {
+                    println!("crease ");
                     let movedir = na::normalize(&v);
                     let crease = na::cross(&contacts[0], &contacts[1]);
                     v = crease * na::dot(&v, &crease);
@@ -86,6 +87,7 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
             break;
         }
     }
+    println!("{:?}", &contacts[..numcontacts]);
     pl.vel = v;
 }
 
@@ -184,8 +186,8 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
 
         let cast = game.map.bsp.cast_ray(&downray);
 
-        let hit_floor = if let Some(bsp::cast::CastResult { norm, ..}) = cast {
-            if norm.y > 0.7 {
+        let hit_floor = if let Some(bsp::cast::CastResult { norm, toi, ..}) = cast {
+            if toi < 0.05 && norm.y > 0.7 {
                 true
             } else {
                 false
