@@ -93,7 +93,7 @@ impl Input {
 
                 if !self.hack {
                     let (x, y) = (absx - self.cursorpos.0, absy - self.cursorpos.1);
-                    window.set_cursor_position(self.cursorpos.0, self.cursorpos.1).unwrap();
+                    let _ = window.set_cursor_position(self.cursorpos.0, self.cursorpos.1);
 
                     self.ang.y -= x as f32 * self.settings.sensitivity;
                     self.ang.x += y as f32 * self.settings.sensitivity;

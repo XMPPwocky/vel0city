@@ -84,7 +84,7 @@ impl Brush {
 
             let d1 = side.plane.dist_to_point(&startpos) - pad;
             let d2 = side.plane.dist_to_point(&endpos) - pad;
-            if d1 > 0.0 && (d2 >= EPS || d2 >= d1) {
+            if d1 > 0.0 && d2 > 0.0 { 
                 return None;
             } else if d1 <= 0.0 && d2 <= 0.0 {
                 continue;
@@ -106,18 +106,12 @@ impl Brush {
         }
         if sf <= ef {
             if sf > -1.0 {
-                let frac = na::clamp(sf, 0.0, 1.0);
                 return Some(CastResult {
-                    toi: frac,
+                    toi: sf,
                     norm: norm
                 })
             }
-        } else if sf > -1.0 {
-            return Some(CastResult {
-                toi: 0.0,
-                norm: norm
-            })
-        };
+        } 
         None
     }
 }

@@ -14,12 +14,11 @@ bitflags! {
 
 pub struct Player {
     pub pos: na::Pnt3<f32>,
-    pub eyeheight: f32,
-    pub eyeang: na::UnitQuat<f32>,
-
-    pub halfextents: na::Vec3<f32>,
+    pub flags: PlayerFlags,
     pub vel: na::Vec3<f32>,
-    pub flags: PlayerFlags
+    pub eyeheight: f32,
+    pub halfextents: na::Vec3<f32>,
+    pub eyeang: na::UnitQuat<f32>,
 }
 
 #[cfg(test)]

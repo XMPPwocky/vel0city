@@ -51,7 +51,7 @@ pub fn draw_view(game: &Game,
 
     for mapmodel in mapmodels {
         let samp = glium::uniforms::Sampler::new(&mapmodel.texture)
-            .anisotropy(8)
+            .anisotropy(4)
             .magnify_filter(glium::uniforms::MagnifySamplerFilter::Linear)
             .minify_filter(glium::uniforms::MinifySamplerFilter::LinearMipmapLinear);
 

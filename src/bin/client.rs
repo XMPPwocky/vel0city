@@ -54,6 +54,7 @@ fn main() {
     let display = glutin::WindowBuilder::new()
         // .with_vsync()
         .with_title("vel0city".to_owned())
+        .with_dimensions(800, 600)
         .build_glium()
         .unwrap();
     let mut client = Client::new(&display);
@@ -108,22 +109,24 @@ fn main() {
             drawparams: drawparams, 
         };
 
-        let mi = client.input.make_moveinput(&game.movesettings);
+        if accumtime >= tick {
+            let mi = client.input.make_moveinput(&game.movesettings);
 
-        while accumtime >= tick {
-            accumtime -= tick;
-            vel0city::player::movement::move_player(&mut game, 0, &mi, tick as f32);
+            while accumtime >= tick {
+                accumtime -= tick;
+                vel0city::player::movement::move_player(&mut game, 0, &mi, tick as f32);
+            }
         }
 
         let mut target = display.draw();
-        target.clear_color_and_depth((0.0, 0.0, 0.1, 0.0), 1.0);
+        target.clear_depth(1.0);
         vel0city::graphics::draw_view(&game,
                                       &view,
                                       &client.playermodel,
                                       &mapmodel,
                                       &mut target);
         target.finish();
-        let pv = game.players[0].vel;
+        //let pv = game.players[0].vel;
         //println!("speed: {:?}", na::norm(&na::Vec2::new(pv.x, pv.z)));
     }
         
