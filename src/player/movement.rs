@@ -21,12 +21,11 @@ pub struct MoveInput {
 
 fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
     let mut dt = dt;
-    let mut hit_floor = false;
     let mut numcontacts = 0;
     let mut contacts: [na::Vec3<f32>; 4] = [na::zero(); 4]; 
     let mut v = pl.vel;
     for _ in 0..3 {
-        if dt == 0.0 { 
+        if dt <= 0.0 { 
             break;
         }
 
@@ -39,10 +38,6 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
         let cast = map.bsp.cast_ray(&moveray);
 
         if let Some(bsp::cast::CastResult { toi, norm}) = cast {
-            if norm.y > 0.7 {
-                hit_floor = true;
-            }
-
             if toi > 0.0 {
                 numcontacts = 1;
                 pl.pos = pl.pos + (v * toi * dt); 
@@ -61,7 +56,7 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
                 clip_velocity(&mut v, &contacts[i]); 
                 bad = false;
                 for j in (0..numcontacts).filter(|&j| j != i) {
-                    if na::dot(&contacts[j], &v) < 0.0 {
+                    if na::dot(&contacts[j], &v) <= 0.0 {
                         bad = true; 
                         break;
                     }
@@ -92,11 +87,6 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
         }
     }
     pl.vel = v;
-    if hit_floor {
-        pl.flags.insert(PLAYER_ONGROUND)
-    } else {
-        pl.flags.remove(PLAYER_ONGROUND)
-    }
 }
 
 fn how_far(map: &Map, pl: &Player, movement: na::Vec3<f32>) -> na::Vec3<f32> {
@@ -186,7 +176,30 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.vel = pl.vel + (movedir * addspeed);
         }
 
-        pl.vel.y -= game.movesettings.gravity * dt;
+        let downray = bsp::cast::Ray {
+            orig: pl.pos,
+            dir: na::Vec3::new(0.0, -1.0, 0.0),
+            halfextents: pl.halfextents
+        };
+
+        let cast = game.map.bsp.cast_ray(&downray);
+
+        let hit_floor = if let Some(bsp::cast::CastResult { norm, ..}) = cast {
+            if norm.y > 0.7 {
+                true
+            } else {
+                false
+            }
+        } else {
+            false
+        };
+        if hit_floor {
+            pl.flags.insert(PLAYER_ONGROUND)
+        } else {
+            pl.vel.y -= game.movesettings.gravity * dt;
+            pl.flags.remove(PLAYER_ONGROUND)
+        }
+
         // clamp velocity again after gravity
         let speed = na::norm(&pl.vel);
         if !na::approx_eq(&speed, &0.0) {
@@ -195,18 +208,28 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
 
             pl.vel = dir * newspeed;
         }
-        let speed = na::norm(&pl.vel);
-
+        
         if !input.jump {
             pl.flags.remove(PLAYER_JUMPED);
         }
+
 
         simple_move(&game.map, pl, dt);
     }
 }
 
+fn clip_middle(n: f32, eps: f32) -> f32 { 
+    if na::abs(&n) < eps {
+        0.0
+    } else {
+        n
+    }
+}
 fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>) {
     let d = na::dot(vel, norm);
     *vel = *vel - (*norm * d * 1.01);
+    vel.x = clip_middle(vel.x, 0.1);
+    vel.y = clip_middle(vel.y, 0.1);
+    vel.z = clip_middle(vel.z, 0.1);
 }
 

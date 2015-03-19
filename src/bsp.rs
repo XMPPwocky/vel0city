@@ -8,7 +8,7 @@ use self::cast::{
 };
 
 
-const EPS: f32 = 1.0/16.0;
+const EPS: f32 = 1.0/32.0;
 
 fn signcpy(n: f32, from: f32) -> f32 {
     if from >= 0.0 {
@@ -84,7 +84,7 @@ impl Brush {
 
             let d1 = side.plane.dist_to_point(&startpos) - pad;
             let d2 = side.plane.dist_to_point(&endpos) - pad;
-            if d1 >= EPS && d2 >= EPS { 
+            if d1 >= 0.0 && d2 >= 0.0 { 
                 return None;
             } else if d1 <= 0.0 && d2 <= 0.0 {
                 continue;
@@ -131,7 +131,7 @@ fn combine_results(a: Option<CastResult>, b: Option<CastResult>) -> Option<CastR
     if let Some(a) = a {
         match b {
             Some(b) => {
-                if a.toi < b.toi {
+                if a.toi <= b.toi {
                     Some(a)
                 } else {
                     Some(b)
@@ -207,7 +207,7 @@ impl Tree {
                 fs = (d1 + pad + EPS) / td;
             } else if d2 < d1 {
                 coincident = false;
-                ns = (d1 + pad + EPS) / td;
+                ns = (d1 + pad - EPS) / td;
                 fs = (d1 - pad - EPS) / td;
             } else {
                 coincident = false;
