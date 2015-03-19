@@ -91,28 +91,25 @@ impl Brush {
             }
             if d1 > d2 {
                 let frac = (d1 - EPS) / (d1 - d2);
+                let frac = na::clamp(frac, 0.0, frac);
                 if frac > sf {
-                    sf = na::clamp(frac, 0.0, 1.0);
+                    sf = frac;
                     norm = side.plane.norm;
                 }
             } else {
                 let frac = (d1 + EPS) / (d1 - d2);
+                let frac = na::clamp(frac, frac, 1.0);
                 if frac < ef {
-                    ef = na::clamp(frac, 0.0, 1.0);
+                    ef = frac;
                 }
             }
         }
         if sf >= start && sf <= end {
-            if sf <= ef {
-                return Some(CastResult {
-                    toi: sf,
-                    norm: norm
-                })
-            } 
+            let toi = na::clamp(sf, 0.0, 1.0);
             return Some(CastResult {
-                toi: 0.0,
+                toi: toi,
                 norm: norm
-            })
+            });
         }
         None
     }
