@@ -1,10 +1,7 @@
 use Game;
 use glium;
 use glium::Surface;
-use na::{
-    self,
-    ToHomogeneous
-};
+use na;
 use std::sync::Arc;
 
 pub mod wavefront;
