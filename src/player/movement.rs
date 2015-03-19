@@ -185,7 +185,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         let cast = game.map.bsp.cast_ray(&downray);
 
         let hit_floor = if let Some(bsp::cast::CastResult { norm, toi, ..}) = cast {
-            if toi <= 0.01 && norm.y > 0.7 {
+            if na::approx_eq(&toi, &0.0) && norm.y > 0.7 {
                 true
             } else {
                 false

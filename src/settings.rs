@@ -32,7 +32,7 @@ impl std::default::Default for MoveSettings {
             maxspeed: 1000.0,
             movespeed: 100.0,
             airspeed: 100.0,
-            jumpspeed: 160.0,
+            jumpspeed: 140.0,
             friction: 6.0, 
         }
     }
