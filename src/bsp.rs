@@ -84,7 +84,7 @@ impl Brush {
 
             let d1 = side.plane.dist_to_point(&startpos) - pad;
             let d2 = side.plane.dist_to_point(&endpos) - pad;
-            if d1 > 0.0 && d2 > 0.0 { 
+            if d1 >= EPS && d2 >= EPS { 
                 return None;
             } else if d1 <= 0.0 && d2 <= 0.0 {
                 continue;
@@ -104,14 +104,18 @@ impl Brush {
                 }
             }
         }
-        if sf <= ef {
-            if sf > -1.0 {
+        if sf > -1.0 {
+            if sf <= ef {
                 return Some(CastResult {
                     toi: sf,
                     norm: norm
                 })
-            }
-        } 
+            } 
+            return Some(CastResult {
+                toi: 0.0,
+                norm: norm
+            })
+        }
         None
     }
 }
@@ -204,7 +208,7 @@ impl Tree {
             } else if d2 < d1 {
                 coincident = false;
                 ns = (d1 + pad + EPS) / td;
-                fs = (d1 - pad + EPS) / td;
+                fs = (d1 - pad - EPS) / td;
             } else {
                 coincident = false;
                 ns = 1.0;

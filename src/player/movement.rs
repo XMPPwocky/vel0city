@@ -1,7 +1,9 @@
 use bsp;
 use bsp::Plane;
 use bsp::cast::CastResult;
+use map::Map;
 use player::{
+    Player,
     PlayerFlags,
     PLAYER_ONGROUND,
     PLAYER_JUMPED
@@ -15,6 +17,102 @@ pub struct MoveInput {
 
     pub jump: bool,
     pub reset: bool,
+}
+
+fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
+    let mut dt = dt;
+    let mut hit_floor = false;
+    let mut numcontacts = 0;
+    let mut contacts: [na::Vec3<f32>; 4] = [na::zero(); 4]; 
+    let mut v = pl.vel;
+    for _ in 0..3 {
+        if dt == 0.0 { 
+            break;
+        }
+
+        let moveray = bsp::cast::Ray {
+            orig: pl.pos,
+            dir: v * dt,
+            halfextents: pl.halfextents
+        };
+
+        let cast = map.bsp.cast_ray(&moveray);
+
+        if let Some(bsp::cast::CastResult { toi, norm}) = cast {
+            if norm.y > 0.7 {
+                hit_floor = true;
+            }
+
+            if toi > 0.0 {
+                numcontacts = 1;
+                pl.pos = pl.pos + (v * toi * dt); 
+                dt = dt * (1.0 - toi);
+                if toi >= 1.0 {
+                    break;
+                }
+            } else {
+                numcontacts += 1;
+            }
+            contacts[numcontacts - 1] = norm;
+
+            let mut bad = false;
+            v = pl.vel;
+            for i in 0..numcontacts {
+                clip_velocity(&mut v, &contacts[i]); 
+                bad = false;
+                for j in (0..numcontacts).filter(|&j| j != i) {
+                    if na::dot(&contacts[j], &v) < 0.0 {
+                        bad = true; 
+                        break;
+                    }
+                }
+                if !bad {
+                    break;
+                }
+            }
+            if bad {
+                if numcontacts == 1 {
+                    // nothing
+                } else if numcontacts == 2 {
+                    let movedir = na::normalize(&v);
+                    let crease = na::cross(&contacts[0], &contacts[1]);
+                    v = crease * na::dot(&v, &crease);
+                    v = v * (1.0 + 0.5 * na::dot(&movedir, &contacts[0]) + 0.5 * na::dot(&movedir, &contacts[1])); 
+                } else {
+                    // stuck in corner
+                    v = na::zero();
+                }
+            }
+            if na::dot(&v, &pl.vel) < 0.0 {
+                v = na::zero(); 
+            }
+        } else {
+            pl.pos = pl.pos + v * dt;
+            break;
+        }
+    }
+    pl.vel = v;
+    if hit_floor {
+        pl.flags.insert(PLAYER_ONGROUND)
+    } else {
+        pl.flags.remove(PLAYER_ONGROUND)
+    }
+}
+
+fn how_far(map: &Map, pl: &Player, movement: na::Vec3<f32>) -> na::Vec3<f32> {
+    let trace = map.bsp.cast_ray(&bsp::cast::Ray {
+        orig: pl.pos,
+        dir: (pl.pos.to_vec() + movement),
+        halfextents: pl.halfextents
+    });
+    if let Some(trace) = trace {
+        pl.pos.to_vec() + (movement * trace.toi)
+    } else {
+        pl.pos.to_vec()
+    }
+}
+fn horiz_speed(vel: &na::Vec3<f32>) -> f32 {
+    na::norm(&na::Vec2::new(vel.x, vel.z))
 }
 
 pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) {
@@ -88,9 +186,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.vel = pl.vel + (movedir * addspeed);
         }
 
-
         pl.vel.y -= game.movesettings.gravity * dt;
-
         // clamp velocity again after gravity
         let speed = na::norm(&pl.vel);
         if !na::approx_eq(&speed, &0.0) {
@@ -99,90 +195,13 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
 
             pl.vel = dir * newspeed;
         }
+        let speed = na::norm(&pl.vel);
 
         if !input.jump {
             pl.flags.remove(PLAYER_JUMPED);
         }
 
-
-
-        let mut dt = dt;
-        let mut hit_floor = false;
-        let mut numcontacts = 0;
-        let mut contacts: [na::Vec3<f32>; 4] = [na::zero(); 4]; 
-        let mut v = pl.vel;
-        for _ in 0..3 {
-            if na::approx_eq(&dt, &0.0) {
-                break;
-            }
-
-            let moveray = bsp::cast::Ray {
-                orig: pl.pos,
-                dir: v * dt,
-                halfextents: pl.halfextents
-            };
-
-            let cast = game.map.bsp.cast_ray(&moveray);
-
-            if let Some(bsp::cast::CastResult { toi, norm}) = cast {
-                if norm.y > 0.7 {
-                    hit_floor = true;
-                }
-
-                if toi > 0.0 {
-                    numcontacts = 1;
-                    pl.pos = pl.pos + (v * toi * dt); 
-                    dt = dt * (1.0 - toi);
-                    if toi >= 1.0 {
-                        break;
-                    }
-                } else {
-                    numcontacts += 1;
-                }
-                contacts[numcontacts - 1] = norm;
-
-                v = pl.vel;
-                let mut bad = false;
-                for i in 0..numcontacts {
-                    clip_velocity(&mut v, &contacts[i]); 
-                    bad = false;
-                    for j in (0..numcontacts).filter(|&j| j != i) {
-                        if na::dot(&contacts[j], &v) < 0.0 {
-                            bad = true; 
-                            break;
-                        }
-                    }
-                    if !bad {
-                        break;
-                    }
-                }
-                if bad {
-                    if numcontacts == 1 {
-                        clip_velocity(&mut v, &contacts[0]);
-                    } else if numcontacts == 2 {
-                        let movedir = na::normalize(&v);
-                        let crease = na::cross(&contacts[0], &contacts[1]);
-                        v = crease * na::dot(&v, &crease);
-                        v = v * (1.0 + 0.5 * na::dot(&movedir, &contacts[0])); 
-                    } else {
-                        // stuck in corner
-                        v = na::zero();
-                    }
-                }
-                if na::dot(&v, &pl.vel) < 0.0 || na::norm(&v) < 0.75 {
-                    v = na::zero(); 
-                }
-            } else {
-                pl.pos = pl.pos + v * dt;
-                break;
-            }
-        }
-        pl.vel = v;
-        if hit_floor {
-            pl.flags.insert(PLAYER_ONGROUND)
-        } else {
-            pl.flags.remove(PLAYER_ONGROUND)
-        }
+        simple_move(&game.map, pl, dt);
     }
 }
 

@@ -94,7 +94,7 @@ fn main() {
         accumtime += frametime;
         smoothtime = (smoothtime*16.0 + frametime) / 17.0;
         lasttime = curtime;
-        println!("{}FPS", 1.0 / smoothtime);
+        //println!("{}FPS", 1.0 / smoothtime);
         
         let win = display.get_window().unwrap();
         for ev in win.poll_events() {
@@ -116,6 +116,8 @@ fn main() {
                 accumtime -= tick;
                 vel0city::player::movement::move_player(&mut game, 0, &mi, tick as f32);
             }
+            let pv = game.players[0].vel;
+            println!("speed: {:?}", na::norm(&na::Vec2::new(pv.x, pv.z)));
         }
 
         let mut target = display.draw();
@@ -126,8 +128,6 @@ fn main() {
                                       &mapmodel,
                                       &mut target);
         target.finish();
-        //let pv = game.players[0].vel;
-        //println!("speed: {:?}", na::norm(&na::Vec2::new(pv.x, pv.z)));
     }
         
 }
