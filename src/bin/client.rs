@@ -86,12 +86,14 @@ fn main() {
     let tick = 1.0/128.0;
     let mut lasttime = clock_ticks::precise_time_s();
     let mut accumtime = 0.0;
+    let mut smoothtime = 0.0;
     while !display.is_closed() {
         let curtime = clock_ticks::precise_time_s();
         let frametime = curtime - lasttime;
         accumtime += frametime;
+        smoothtime = (smoothtime*16.0 + frametime) / 17.0;
         lasttime = curtime;
-        println!("{}FPS", 1.0 / frametime);
+        println!("{}FPS", 1.0 / smoothtime);
         
         let win = display.get_window().unwrap();
         for ev in win.poll_events() {
@@ -99,7 +101,7 @@ fn main() {
         }
 
         let l = na::Iso3::new_with_rotmat(na::zero(), client.input.get_ang().to_rot()).inv().unwrap().to_homogeneous();
-        let v = na::Iso3::new((game.players[0].pos.to_vec() + na::Vec3 { y: vel0city::player::PLAYER_HALFEXTENTS.y * 0.9, ..na::zero() }) * -1.0, na::zero()).to_homogeneous();
+        let v = na::Iso3::new((game.players[0].pos.to_vec() + na::Vec3 { y: vel0city::player::PLAYER_HALFEXTENTS.y * 0.6, ..na::zero() }) * -1.0, na::zero()).to_homogeneous();
         //l.inv();
         let view = vel0city::graphics::View {
             w2s: proj * l * v,
@@ -108,7 +110,7 @@ fn main() {
 
         let mi = client.input.make_moveinput(&game.movesettings);
 
-        while accumtime > tick {
+        while accumtime >= tick {
             accumtime -= tick;
             vel0city::player::movement::move_player(&mut game, 0, &mi, tick as f32);
         }

@@ -109,9 +109,9 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         let mut dt = dt;
         let mut hit_floor = false;
         let mut numcontacts = 0;
-        let mut contacts: [na::Vec3<f32>; 5] = [na::zero(); 5]; 
+        let mut contacts: [na::Vec3<f32>; 4] = [na::zero(); 4]; 
         let mut v = pl.vel;
-        for _ in 0..4 {
+        for _ in 0..3 {
             if na::approx_eq(&dt, &0.0) {
                 break;
             }
@@ -139,14 +139,15 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                 } else {
                     numcontacts += 1;
                 }
-                contacts[numcontacts - 1] = norm * -1.0;
+                contacts[numcontacts - 1] = norm;
+
                 v = pl.vel;
                 let mut bad = false;
                 for i in 0..numcontacts {
                     clip_velocity(&mut v, &contacts[i]); 
                     bad = false;
                     for j in (0..numcontacts).filter(|&j| j != i) {
-                        if na::dot(&contacts[j], &v) > 0.0 {
+                        if na::dot(&contacts[j], &v) < 0.0 {
                             bad = true; 
                             break;
                         }

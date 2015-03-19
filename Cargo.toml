@@ -7,7 +7,7 @@ build = "build.rs"
 opt-level = 3 
 debug = true 
 rpath = false
-lto = false
+lto = false 
 
 [dependencies.nalgebra]
 git = "https://github.com/jpernst/nalgebra"
