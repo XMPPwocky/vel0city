@@ -197,17 +197,17 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.flags.insert(PLAYER_ONGROUND)
         } else {
             pl.flags.remove(PLAYER_ONGROUND);
-        }
-        pl.vel.y -= game.movesettings.gravity * dt;
+            pl.vel.y -= game.movesettings.gravity * dt;
+            // clamp velocity again after gravity
+            let speed = na::norm(&pl.vel);
+            if !na::approx_eq(&speed, &0.0) {
+                let dir = na::normalize(&pl.vel);
+                let newspeed = na::clamp(speed, 0.0, game.movesettings.maxspeed); 
 
-        // clamp velocity again after gravity
-        let speed = na::norm(&pl.vel);
-        if !na::approx_eq(&speed, &0.0) {
-            let dir = na::normalize(&pl.vel);
-            let newspeed = na::clamp(speed, 0.0, game.movesettings.maxspeed); 
-
-            pl.vel = dir * newspeed;
+                pl.vel = dir * newspeed;
+            }
         }
+
         
         if !input.jump {
             pl.flags.remove(PLAYER_JUMPED);
@@ -250,8 +250,8 @@ fn clip_middle(n: f32, eps: f32) -> f32 {
 fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>) {
     let d = na::dot(vel, norm);
     *vel = *vel - (*norm * d * 1.01);
-    vel.x = clip_middle(vel.x, 0.05);
-    vel.y = clip_middle(vel.y, 0.05);
-    vel.z = clip_middle(vel.z, 0.05);
+    vel.x = clip_middle(vel.x, 0.5);
+    vel.y = clip_middle(vel.y, 0.5);
+    vel.z = clip_middle(vel.z, 0.5);
 }
 

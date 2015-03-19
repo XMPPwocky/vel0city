@@ -1,7 +1,6 @@
 #![allow(dead_code, unused_variables)]
 
 use na;
-use na::Dot;
 use self::cast::{
     Ray,
     CastResult
