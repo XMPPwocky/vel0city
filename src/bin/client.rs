@@ -6,6 +6,7 @@ extern crate "nalgebra" as na;
 extern crate clock_ticks;
 
 use std::sync::Arc;
+use std::borrow::ToOwned;
 use glium::DisplayBuild;
 use glium::Surface;
 
@@ -90,7 +91,7 @@ fn main() {
         let frametime = curtime - lasttime;
         accumtime += frametime;
         lasttime = curtime;
-        //println!("{}FPS", 1.0 / frametime);
+        println!("{}FPS", 1.0 / frametime);
         
         let win = display.get_window().unwrap();
         for ev in win.poll_events() {
@@ -121,7 +122,7 @@ fn main() {
                                       &mut target);
         target.finish();
         let pv = game.players[0].vel;
-        println!("speed: {:?}", na::norm(&na::Vec2::new(pv.x, pv.z)));
+        //println!("speed: {:?}", na::norm(&na::Vec2::new(pv.x, pv.z)));
     }
         
 }

@@ -133,7 +133,7 @@ fn combine_results(a: Option<CastResult>, b: Option<CastResult>) -> Option<CastR
     if let Some(a) = a {
         match b {
             Some(b) => {
-                if a.toi <= b.toi {
+                if a.toi < b.toi {
                     Some(a)
                 } else {
                     Some(b)
@@ -183,11 +183,6 @@ impl Tree {
             return best ;
         }
 
-        /*
-        if start >= end {
-            return None;
-        }*/
-
         let InnerNode { ref plane, pos, neg } = self.inodes[nodeidx as usize];
         
         let d1 = plane.dist_to_point(&startpos);
@@ -204,9 +199,6 @@ impl Tree {
             self.cast_ray_recursive(&ray, pos, (start, end), (startpos, endpos))
         } else if d1 < -(pad + 1.0) && d2 < -(pad + 1.0) {
             self.cast_ray_recursive(&ray, neg, (start, end), (startpos, endpos))
-        } else if d1 == d2 { 
-            combine_results(self.cast_ray_recursive(&ray, pos, (start, end), (startpos, endpos)), 
-        self.cast_ray_recursive(&ray, neg, (start, end), (startpos, endpos)))
         } else {
             let td = d2 - d1;
             let coincident;
@@ -219,6 +211,10 @@ impl Tree {
                 coincident = false;
                 ns = (d1 + pad + EPS) / td;
                 fs = (d1 - pad + EPS) / td;
+            } else {
+                coincident = false;
+                ns = 1.0;
+                fs = 0.0;
             }
             
             let ns = na::clamp(ns, 0.0, 1.0);
