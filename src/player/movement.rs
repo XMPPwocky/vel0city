@@ -114,26 +114,22 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.flags = PlayerFlags::empty(); 
         };
 
-        if input.jump && pl.flags.contains(PLAYER_ONGROUND) { 
-            if !pl.flags.contains(PLAYER_JUMPED) {
-                let jspeed = game.movesettings.jumpspeed;
-
-                pl.vel.y = if pl.vel.y > jspeed {
-                    pl.vel.y + jspeed
-                } else {
-                    jspeed
-                };
-
-                pl.flags.remove(PLAYER_ONGROUND);
-            }
-            //pl.flags.insert(PLAYER_JUMPED);
-        }
-
         let accel = if pl.flags.contains(PLAYER_ONGROUND) {
             game.movesettings.accel
         } else {
             game.movesettings.airaccel
         };
+
+        if input.jump && pl.flags.contains(PLAYER_ONGROUND) { 
+            if !pl.flags.contains(PLAYER_JUMPED) {
+                let jspeed = game.movesettings.jumpspeed;
+
+                pl.vel.y = jspeed; 
+
+                pl.flags.remove(PLAYER_ONGROUND);
+            }
+            //pl.flags.insert(PLAYER_JUMPED);
+        }
 
         let friction = if pl.flags.contains(PLAYER_ONGROUND) {
             game.movesettings.friction 
