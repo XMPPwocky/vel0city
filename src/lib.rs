@@ -26,6 +26,7 @@ pub struct Game {
     pub players: Vec<player::Player>,
 
     pub movesettings: settings::MoveSettings,
+    pub timescale: f32,
 }
 
 #[cfg(test)]

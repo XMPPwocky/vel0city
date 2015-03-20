@@ -178,14 +178,14 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
 
         let downray = bsp::cast::Ray {
             orig: pl.pos,
-            dir: na::Vec3::new(0.0, -1.0, 0.0),
+            dir: na::Vec3::new(0.0, -0.1, 0.0),
             halfextents: pl.halfextents
         };
 
         let cast = game.map.bsp.cast_ray(&downray);
 
         let hit_floor = if let Some(bsp::cast::CastResult { norm, toi, ..}) = cast {
-            if na::approx_eq(&toi, &0.0) && norm.y > 0.7 {
+            if toi == 0.0 && norm.y > 0.7 {
                 true
             } else {
                 false
@@ -213,7 +213,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.flags.remove(PLAYER_JUMPED);
         }
 
-        let stepsize = 3.0;
+        let stepsize = 2.5;
 
         let startpos = pl.pos;
         let startvel = pl.vel;
