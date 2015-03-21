@@ -65,7 +65,7 @@ pub fn import_graphics_model(data: &[u8], display: &glium::Display) -> Result<Ve
             let idx = verts.len();
             indices.push(idx as u32);
             verts.push(graphics::Vertex {
-                position: [vert.position.x, vert.position.z, vert.position.y],
+                position: [vert.position.x, -1.0 * vert.position.z, vert.position.y],
                 texcoords: [1.0 - vert.texcoords.x, 1.0 - vert.texcoords.y]
             });
         }
@@ -170,7 +170,7 @@ fn read_plane(data: &[u8]) -> byteorder::Result<bsp::Plane> {
     let dist = try!(cursor.read_f32::<LittleEndian>()); 
 
     Ok(bsp::Plane {
-        norm: na::Vec3::new(n_x, n_z, n_y),
+        norm: na::Vec3::new(n_x, -n_z, n_y),
         dist: dist
     })
 }

@@ -83,10 +83,3 @@ pub fn draw_view(game: &Game,
                    &view.drawparams).unwrap();
     }*/
 }
-
-pub fn stub_display() -> glium::Display {
-    use glutin;
-    use glium::DisplayBuild;
-
-    glutin::HeadlessRendererBuilder::new(640, 480).build_glium().unwrap()
-}

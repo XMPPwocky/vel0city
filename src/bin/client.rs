@@ -68,7 +68,7 @@ fn main() {
     let mut game = vel0city::Game {
         movesettings: std::default::Default::default(),
         players: vec![vel0city::player::Player {
-            pos: na::Pnt3::new(0.0, 10.0, 7.),
+            pos: na::Pnt3::new(0.0, -10.0, 7.),
             eyeheight: 0.0,
             eyeang: na::UnitQuat::new_with_euler_angles(0.,0.,0.,),
             halfextents: vel0city::player::PLAYER_HALFEXTENTS,
@@ -103,7 +103,7 @@ fn main() {
         }
 
         let l = na::Iso3::new_with_rotmat(na::zero(), client.input.get_ang().to_rot()).inv().unwrap().to_homogeneous();
-        let v = na::Iso3::new((game.players[0].pos.to_vec() + na::Vec3 { y: vel0city::player::PLAYER_HALFEXTENTS.y * 0.6, ..na::zero() }) * -1.0, na::zero()).to_homogeneous();
+        let v = na::Iso3::new((game.players[0].pos.to_vec() + na::Vec3 { y: vel0city::player::PLAYER_HALFEXTENTS.y * -0.6, ..na::zero() }) * -1.0, na::zero()).to_homogeneous();
         //l.inv();
         let view = vel0city::graphics::View {
             w2s: proj * l * v,

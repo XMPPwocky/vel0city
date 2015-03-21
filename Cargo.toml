@@ -10,7 +10,7 @@ rpath = false
 lto = false 
 
 [dependencies.nalgebra]
-git = "https://github.com/jpernst/nalgebra"
+git = "https://github.com/sebcrozet/nalgebra"
 
 [dependencies.capnp]
 git = "https://github.com/dwrensha/capnproto-rust"
@@ -25,10 +25,6 @@ git = "https://github.com/PistonDevelopers/wavefront_obj"
 git = "https://github.com/tomaka/glium"
 features = ["nalgebra", "image", "headless"]
 
-[dependencies.glutin]
-git = "https://github.com/tomaka/glutin"
-features = ["window", "headless"]
-
 [dependencies.glium_macros]
 git = "https://github.com/tomaka/glium"
 
@@ -38,3 +34,4 @@ clock_ticks = "*"
 byteorder = "*"
 bitflags = "*"
 image = "*"
+glutin = "*"

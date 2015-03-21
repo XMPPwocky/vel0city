@@ -109,7 +109,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
     {
         let pl = &mut game.players[playeridx as usize];
         if input.reset {
-            pl.pos = na::Pnt3::new(0.0, 10.0, 0.0);
+            pl.pos = na::Pnt3::new(0.0, -10.0, 0.0);
             pl.vel = na::zero();
             pl.flags = PlayerFlags::empty(); 
         };
@@ -124,7 +124,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             if !pl.flags.contains(PLAYER_JUMPED) {
                 let jspeed = game.movesettings.jumpspeed;
 
-                pl.vel.y = jspeed; 
+                pl.vel.y = -jspeed; 
 
                 pl.flags.remove(PLAYER_ONGROUND);
             }
@@ -174,14 +174,14 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
 
         let downray = bsp::cast::Ray {
             orig: pl.pos,
-            dir: na::Vec3::new(0.0, -0.1, 0.0),
+            dir: na::Vec3::new(0.0, 0.1, 0.0),
             halfextents: pl.halfextents
         };
 
         let cast = game.map.bsp.cast_ray(&downray);
 
         let hit_floor = if let Some(bsp::cast::CastResult { norm, toi, ..}) = cast {
-            if toi == 0.0 && norm.y > 0.7 {
+            if toi == 0.0 && norm.y < -0.7 {
                 true
             } else {
                 false
@@ -193,7 +193,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.flags.insert(PLAYER_ONGROUND)
         } else {
             pl.flags.remove(PLAYER_ONGROUND);
-            pl.vel.y -= game.movesettings.gravity * dt;
+            pl.vel.y += game.movesettings.gravity * dt;
             // clamp velocity again after gravity
             let speed = na::norm(&pl.vel);
             if !na::approx_eq(&speed, &0.0) {
@@ -219,11 +219,11 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
 
         pl.pos = startpos;
         pl.vel = startvel;
-        let (upstart, _) = how_far(&game.map, pl, na::Vec3::new(0.0, stepsize, 0.0));
+        let (upstart, _) = how_far(&game.map, pl, na::Vec3::new(0.0, -stepsize, 0.0));
         pl.pos = upstart.to_pnt();
         simple_move(&game.map, pl, dt);
         
-        let (downstart, _) = how_far(&game.map, pl, na::Vec3::new(0.0, -stepsize , 0.0));
+        let (downstart, _) = how_far(&game.map, pl, na::Vec3::new(0.0, stepsize , 0.0));
         pl.pos = downstart.to_pnt(); 
 
         let updist = horiz_speed(&(pl.pos.to_vec() - startpos.to_vec()));

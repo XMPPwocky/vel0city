@@ -7,6 +7,11 @@ use glutin::{
 };
 use settings::InputSettings;
 use player::movement::MoveInput;
+use std::f32::consts::{
+    PI_2,
+    FRAC_PI_2
+};
+
 
 bitflags! {
     #[derive(Debug)]
@@ -86,16 +91,11 @@ impl Input {
                 }
             },
             &MouseMoved((absx, absy)) => {
-                use std::f32::consts::{
-                    PI_2,
-                    FRAC_PI_2
-                };
-
                 if !self.hack {
                     let (x, y) = (absx - self.cursorpos.0, absy - self.cursorpos.1);
                     let _ = window.set_cursor_position(self.cursorpos.0, self.cursorpos.1);
 
-                    self.ang.y -= x as f32 * self.settings.sensitivity;
+                    self.ang.y += x as f32 * self.settings.sensitivity;
                     self.ang.x += y as f32 * self.settings.sensitivity;
 
                     self.ang.y = (self.ang.y + PI_2) % PI_2;
@@ -112,10 +112,10 @@ impl Input {
     pub fn make_moveinput(&self, movesettings: &::settings::MoveSettings) -> MoveInput {
         let mut wvel: na::Vec3<f32> = na::zero();
         if self.buttons.contains(BUTTON_FORWARD) {
-            wvel.z += movesettings.movespeed;
+            wvel.z -= movesettings.movespeed;
         }
         if self.buttons.contains(BUTTON_BACK) {
-            wvel.z -= movesettings.movespeed;
+            wvel.z += movesettings.movespeed;
         }
         if self.buttons.contains(BUTTON_LEFT) {
             wvel.x += movesettings.movespeed;
@@ -139,7 +139,7 @@ impl Input {
     pub fn get_ang(&self) -> na::UnitQuat<f32> {
         let rot = na::UnitQuat::new(na::Vec3::new(0.0, self.ang.y, 0.0));
         rot.append_rotation(
-            &na::Vec3::new(self.ang.x, 0.0, 0.0)
+            &na::Vec3::new(::std::f32::consts::PI + self.ang.x, 0.0, 0.0)
             )
     }
 }
