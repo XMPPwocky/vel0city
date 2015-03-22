@@ -21,19 +21,22 @@ pub struct MoveSettings {
     pub jumpspeed: f32,
 
     pub friction: f32,
+
+    pub slidetime: f32,
 }
 impl std::default::Default for MoveSettings {
     fn default() -> MoveSettings {
         MoveSettings {
-            gravity: 260.0,
+            gravity: 265.0,
             accel: 10.0,
-            airaccel: 4.0,
-            speedeps: 40.0,
+            airaccel: 3.0,
+            speedeps: 30.0,
             maxspeed: 1000.0,
-            movespeed: 120.0,
-            airspeed: 120.0,
-            jumpspeed: 150.0,
-            friction: 6.0, 
+            movespeed: 150.0,
+            airspeed: 20.0,
+            jumpspeed: 160.0,
+            friction: 8.0, 
+            slidetime: 0.2,
         }
     }
 }

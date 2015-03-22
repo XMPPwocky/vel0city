@@ -68,15 +68,18 @@ fn main() {
     let mut game = vel0city::Game {
         movesettings: std::default::Default::default(),
         players: vec![vel0city::player::Player {
-            pos: na::Pnt3::new(0.0, -10.0, 7.),
+            pos: na::Pnt3::new(0.0, -10.0, 0.),
             eyeheight: 0.0,
             eyeang: na::UnitQuat::new_with_euler_angles(0.,0.,0.,),
             halfextents: vel0city::player::PLAYER_HALFEXTENTS,
             vel: na::zero(),
             flags: vel0city::player::PlayerFlags::empty(),
+            landtime: 0.0,
+            holdjumptime: 0.0,
         }],
         map: vel0city::map::single_plane_map(),
         timescale: 1.0,
+        time: 0.0,
     };
 
     let asset = assets::load_bin_asset("maps/test.bsp").unwrap();
@@ -116,7 +119,10 @@ fn main() {
             while accumtime >= tick {
                 accumtime -= tick;
                 let timescale = game.timescale; // borrow checker hack
-                vel0city::player::movement::move_player(&mut game, 0, &mi, tick as f32 * timescale);
+                let time = tick as f32 * timescale;
+                game.time += time;
+                //println!("{} {}", game.time, game.players[0].holdjumptime);
+                vel0city::player::movement::move_player(&mut game, 0, &mi, time);
             }
             let pv = game.players[0].vel;
             println!("speed: {:?}", na::norm(&na::Vec2::new(pv.x, pv.z)));

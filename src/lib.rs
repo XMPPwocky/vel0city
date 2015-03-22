@@ -27,6 +27,7 @@ pub struct Game {
 
     pub movesettings: settings::MoveSettings,
     pub timescale: f32,
+    pub time: f32,
 }
 
 #[cfg(test)]

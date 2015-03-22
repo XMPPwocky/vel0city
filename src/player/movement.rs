@@ -5,7 +5,8 @@ use player::{
     Player,
     PlayerFlags,
     PLAYER_ONGROUND,
-    PLAYER_JUMPED
+    PLAYER_HOLDING_JUMP,
+    PLAYER_CAN_STEP,
 };
 use na;
 use Game;
@@ -23,6 +24,7 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
     let mut numcontacts = 0;
     let mut contacts: [na::Vec3<f32>; 4] = [na::zero(); 4]; 
     let mut v = pl.vel;
+    pl.flags.remove(PLAYER_CAN_STEP);
     for _ in 0..3 {
         if dt <= 0.0 { 
             break;
@@ -48,6 +50,10 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
                 numcontacts += 1;
             }
             contacts[numcontacts - 1] = norm;
+            if norm.y > -0.7 {
+                pl.flags.insert(PLAYER_CAN_STEP);
+            }
+
 
             let mut bad = false;
             v = pl.vel;
@@ -120,18 +126,27 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             game.movesettings.airaccel
         };
 
-        if input.jump && pl.flags.contains(PLAYER_ONGROUND) { 
-            if !pl.flags.contains(PLAYER_JUMPED) {
-                let jspeed = game.movesettings.jumpspeed;
+        if input.jump { 
+            if !pl.flags.contains(PLAYER_HOLDING_JUMP) || game.time < (pl.holdjumptime + game.movesettings.slidetime) {
+                if !pl.flags.contains(PLAYER_HOLDING_JUMP) {
+                    pl.holdjumptime = game.time;
+                }
 
-                pl.vel.y = -jspeed; 
 
-                pl.flags.remove(PLAYER_ONGROUND);
+                if pl.flags.contains(PLAYER_ONGROUND) {
+                    let jspeed = game.movesettings.jumpspeed;
+
+                    pl.vel.y = -jspeed; 
+
+                    pl.flags.remove(PLAYER_ONGROUND);
+                }
+                pl.flags.insert(PLAYER_HOLDING_JUMP);
             }
-            //pl.flags.insert(PLAYER_JUMPED);
+        } else {
+            pl.flags.remove(PLAYER_HOLDING_JUMP);
         }
 
-        let friction = if pl.flags.contains(PLAYER_ONGROUND) {
+        let friction = if pl.flags.contains(PLAYER_ONGROUND) && game.time > (pl.landtime + game.movesettings.slidetime) {
             game.movesettings.friction 
         } else {
             0.0
@@ -142,7 +157,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         } else {
             game.movesettings.airspeed
         };
-        
+
         let speed = na::norm(&pl.vel);
         if !na::approx_eq(&speed, &0.0) {
             let dir = na::normalize(&pl.vel);
@@ -172,9 +187,11 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.vel = pl.vel + (movedir * addspeed);
         }
 
+        let stepsize = 2.5;
+
         let downray = bsp::cast::Ray {
             orig: pl.pos,
-            dir: na::Vec3::new(0.0, 0.1, 0.0),
+            dir: na::Vec3::new(0.0, stepsize, 0.0),
             halfextents: pl.halfextents
         };
 
@@ -190,7 +207,10 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             false
         };
         if hit_floor {
-            pl.flags.insert(PLAYER_ONGROUND)
+            if !pl.flags.contains(PLAYER_ONGROUND) {
+                pl.flags.insert(PLAYER_ONGROUND);
+                pl.landtime = game.time; 
+            }
         } else {
             pl.flags.remove(PLAYER_ONGROUND);
             pl.vel.y += game.movesettings.gravity * dt;
@@ -204,16 +224,16 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             }
         }
 
-        
-        if !input.jump {
-            pl.flags.remove(PLAYER_JUMPED);
-        }
 
-        let stepsize = 2.5;
+
 
         let startpos = pl.pos;
         let startvel = pl.vel;
         simple_move(&game.map, pl, dt);
+        if !pl.flags.contains(PLAYER_CAN_STEP) {
+            return;
+        }
+
         let downpos = pl.pos;
         let downvel = pl.vel;
 
@@ -222,7 +242,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         let (upstart, _) = how_far(&game.map, pl, na::Vec3::new(0.0, -stepsize, 0.0));
         pl.pos = upstart.to_pnt();
         simple_move(&game.map, pl, dt);
-        
+
         let (downstart, _) = how_far(&game.map, pl, na::Vec3::new(0.0, stepsize , 0.0));
         pl.pos = downstart.to_pnt(); 
 

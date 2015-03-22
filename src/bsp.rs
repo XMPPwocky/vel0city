@@ -204,7 +204,7 @@ impl Tree {
                 fs = (d1 + pad + EPS) / td;
             } else if d2 < d1 {
                 coincident = false;
-                ns = (d1 + pad - EPS) / td;
+                ns = (d1 + pad + EPS) / td;
                 fs = (d1 - pad - EPS) / td;
             } else {
                 coincident = false;

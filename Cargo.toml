@@ -28,10 +28,14 @@ features = ["nalgebra", "image", "headless"]
 [dependencies.glium_macros]
 git = "https://github.com/tomaka/glium"
 
+[dependencies.image]
+version = "*"
+default-features = false
+features = ["png"]
+
 [dependencies]
 rustc-serialize = "*"
 clock_ticks = "*"
 byteorder = "*"
 bitflags = "*"
-image = "*"
 glutin = "*"
