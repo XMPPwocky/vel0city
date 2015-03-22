@@ -162,7 +162,7 @@ impl Tree {
                           (startpos, endpos): (na::Pnt3<f32>, na::Pnt3<f32>))
                                                -> Option<CastResult> 
     {
-        if start >= end {
+        if start > end {
             return None;
         }
         if nodeidx < 0 {
@@ -204,7 +204,7 @@ impl Tree {
                 fs = (d1 + pad + EPS) / td;
             } else if d2 < d1 {
                 coincident = false;
-                ns = (d1 + pad + EPS) / td;
+                ns = (d1 + pad - EPS) / td;
                 fs = (d1 - pad - EPS) / td;
             } else {
                 coincident = false;

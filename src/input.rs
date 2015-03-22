@@ -91,7 +91,7 @@ impl Input {
                 }
             },
             &MouseMoved((absx, absy)) => {
-                if !self.hack {
+                if !self.hack { 
                     let (x, y) = (absx - self.cursorpos.0, absy - self.cursorpos.1);
                     let _ = window.set_cursor_position(self.cursorpos.0, self.cursorpos.1);
 

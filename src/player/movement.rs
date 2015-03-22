@@ -120,7 +120,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.flags = PlayerFlags::empty(); 
         };
 
-        let accel = if pl.flags.contains(PLAYER_ONGROUND) {
+        let accel = if pl.flags.contains(PLAYER_ONGROUND) && game.time > (pl.landtime + game.movesettings.slidetime) {
             game.movesettings.accel
         } else {
             game.movesettings.airaccel
