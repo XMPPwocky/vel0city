@@ -11,6 +11,8 @@ extern crate "rustc-serialize" as rustc_serialize;
 #[macro_use]
 extern crate bitflags;
 extern crate wavefront_obj;
+#[macro_use]
+extern crate log;
 
 pub mod assets;
 pub mod bsp;

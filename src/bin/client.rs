@@ -4,6 +4,9 @@ extern crate vel0city;
 extern crate wavefront_obj;
 extern crate "nalgebra" as na;
 extern crate clock_ticks;
+#[macro_use]
+extern crate log;
+extern crate env_logger;
 
 use std::sync::Arc;
 use std::borrow::ToOwned;
@@ -51,6 +54,8 @@ impl Client {
 
 #[cfg(not(test))]
 fn main() {
+    env_logger::init().unwrap();
+
     let display = glutin::WindowBuilder::new()
         // .with_vsync()
         .with_title("vel0city".to_owned())
@@ -98,7 +103,7 @@ fn main() {
         accumtime += frametime;
         smoothtime = (smoothtime*16.0 + frametime) / 17.0;
         lasttime = curtime;
-        //println!("{}FPS", 1.0 / smoothtime);
+        debug!("{}FPS", 1.0 / smoothtime);
         
         let win = display.get_window().unwrap();
         for ev in win.poll_events() {
@@ -121,11 +126,10 @@ fn main() {
                 let timescale = game.timescale; // borrow checker hack
                 let time = tick as f32 * timescale;
                 game.time += time;
-                //println!("{} {}", game.time, game.players[0].holdjumptime);
                 vel0city::player::movement::move_player(&mut game, 0, &mi, time);
             }
             let pv = game.players[0].vel;
-            println!("speed: {:?}", na::norm(&na::Vec2::new(pv.x, pv.z)));
+            debug!("Player speed: {}", na::norm(&na::Vec2::new(pv.x, pv.z))); 
         }
 
         let mut target = display.draw();

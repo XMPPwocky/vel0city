@@ -1,7 +1,7 @@
 [package]
 name = "vel0city"
 version = "0.0.1"
-build = "build.rs"
+#build = "build.rs"
 
 [profile.release]
 opt-level = 3 
@@ -28,14 +28,12 @@ features = ["nalgebra", "image", "headless"]
 [dependencies.glium_macros]
 git = "https://github.com/tomaka/glium"
 
-[dependencies.image]
-version = "*"
-default-features = false
-features = ["png"]
-
 [dependencies]
+image = "*"
 rustc-serialize = "*"
 clock_ticks = "*"
 byteorder = "*"
 bitflags = "*"
 glutin = "*"
+log = "*"
+env_logger = "*"

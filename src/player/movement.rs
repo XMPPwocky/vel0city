@@ -72,9 +72,9 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
             }
             if bad {
                 if numcontacts == 1 {
-                    // nothing
+                    warn!("Clip failed with 1 contact?")
                 } else if numcontacts == 2 {
-                    println!("crease ");
+                    debug!("moving along crease...");
                     let movedir = na::normalize(&v);
                     let crease = na::cross(&contacts[0], &contacts[1]);
                     v = crease * na::dot(&v, &crease);

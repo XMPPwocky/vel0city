@@ -70,7 +70,7 @@ impl Brush {
         let mut norm = na::zero();
         for side in &self.sides {
             if !(side.contents & 1 == 1) {
-                //println!("skip nosolid");
+                debug!("Skipping non-solid brush side... contents {}", side.contents);
                 continue;
             }
 
