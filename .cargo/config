@@ -1,0 +1,10 @@
+[registry]
+token = "X8ydW6wDZKQKcDOKLIxOLx22gOV9lqv1"
+
+[target.x86_64-pc-windows-gnu]
+linker = "winlink.bat"
+ar = "ar"
+
+[target.i686-pc-windows-gnu]
+linker = "winlink.bat"
+ar = "ar"
