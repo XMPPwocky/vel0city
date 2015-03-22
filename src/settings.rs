@@ -33,10 +33,10 @@ impl std::default::Default for MoveSettings {
             speedeps: 30.0,
             maxspeed: 1000.0,
             movespeed: 150.0,
-            airspeed: 20.0,
+            airspeed: 40.0,
             jumpspeed: 160.0,
             friction: 8.0, 
-            slidetime: 0.2,
+            slidetime: 0.185,
         }
     }
 }
