@@ -45,6 +45,12 @@ impl Input {
             hack: false,
             settings: InputSettings {
                 sensitivity: 0.0033,
+                /*
+                forwardkey: W,
+                backkey: A,
+                leftkey: S,
+                rightkey: D,
+                */
                 forwardkey: F,
                 backkey: N,
                 leftkey: Y,
