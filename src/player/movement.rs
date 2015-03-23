@@ -15,6 +15,8 @@ pub struct MoveInput {
     /// The velocity the player "wishes" to have 
     pub wishvel: na::Vec3<f32>,
 
+    pub eyeang: na::Vec3<f32>,
+
     pub jump: bool,
     pub reset: bool,
 }
@@ -119,6 +121,8 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.vel = na::zero();
             pl.flags = PlayerFlags::empty(); 
         };
+
+        pl.eyeang = input.eyeang;
 
         let accel = if pl.flags.contains(PLAYER_ONGROUND) && game.time > (pl.landtime + game.movesettings.slidetime) {
             game.movesettings.accel

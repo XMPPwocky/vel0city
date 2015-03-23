@@ -41,7 +41,7 @@ impl Input {
         Input {
             ang: na::zero(),
             buttons: Buttons::empty(),
-            cursorpos: (400, 400),
+            cursorpos: (400, 300),
             hack: false,
             settings: InputSettings {
                 sensitivity: 0.0033,
@@ -132,14 +132,12 @@ impl Input {
 
         MoveInput {
             wishvel: wvel,
+            eyeang: self.ang,
             jump: jump,
             reset: reset,
         }
     }
-    pub fn get_ang(&self) -> na::UnitQuat<f32> {
-        let rot = na::UnitQuat::new(na::Vec3::new(0.0, self.ang.y, 0.0));
-        rot.append_rotation(
-            &na::Vec3::new(::std::f32::consts::PI + self.ang.x, 0.0, 0.0)
-            )
+    pub fn get_ang(&self) -> na::Vec3<f32> { 
+        self.ang
     }
 }

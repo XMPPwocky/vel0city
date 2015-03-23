@@ -1,1 +1,1 @@
-gcc -mwindows -static-libgcc %*
+gcc -static-libgcc %*

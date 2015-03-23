@@ -5,6 +5,7 @@ use na;
 use std::sync::Arc;
 
 pub mod wavefront;
+pub mod hud;
 
 #[derive(Copy)]
 pub struct Vertex {

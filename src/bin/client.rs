@@ -15,13 +15,18 @@ use glium::Surface;
 
 use vel0city::assets;
 use na::{
+    Rotation,
     ToHomogeneous,
     Inv
+};
+use std::f32::consts::{
+    PI,
 };
 
 pub struct Client {
     playermodel: vel0city::graphics::Model,
     input: vel0city::input::Input,
+    hud: vel0city::graphics::hud::Hud,
 }
 impl Client {
     fn new(display: &glium::Display) -> Client {
@@ -45,9 +50,12 @@ impl Client {
                                                                       tex,
                                                                       display);
         let input = vel0city::input::Input::new();
+        let hud = vel0city::graphics::hud::Hud::new(display);
+
         Client {
             playermodel: playermodel,
             input: input,
+            hud: hud,
         }
     }
 }
@@ -75,7 +83,7 @@ fn main() {
         players: vec![vel0city::player::Player {
             pos: na::Pnt3::new(0.0, -10.0, 0.),
             eyeheight: 0.0,
-            eyeang: na::UnitQuat::new_with_euler_angles(0.,0.,0.,),
+            eyeang: na::zero(), 
             halfextents: vel0city::player::PLAYER_HALFEXTENTS,
             vel: na::zero(),
             flags: vel0city::player::PlayerFlags::empty(),
@@ -91,7 +99,7 @@ fn main() {
     let mapmodel = vel0city::qbsp_import::import_graphics_model(&asset, &display).unwrap();
     
     let winsize = display.get_window().unwrap().get_outer_size().unwrap();
-    client.input.cursorpos = (winsize.0 as i32 / 2, winsize.1 as i32 / 2);
+    //client.input.cursorpos = (winsize.0 as i32 / 2, winsize.1 as i32 / 2);
 
     let tick = 1.0/128.0;
     let mut lasttime = clock_ticks::precise_time_s();
@@ -110,7 +118,13 @@ fn main() {
             client.input.handle_event(&win, &ev);
         }
 
-        let l = na::Iso3::new_with_rotmat(na::zero(), client.input.get_ang().to_rot()).inv().unwrap().to_homogeneous();
+        let ang = game.players[0].eyeang;
+        let rot = na::UnitQuat::new(na::Vec3::new(0.0, ang.y, 0.0));
+        let rot = rot.append_rotation(
+            &na::Vec3::new(PI + ang.x, 0.0, 0.0)
+            );
+
+        let l = na::Iso3::new_with_rotmat(na::zero(), rot.to_rot()).inv().unwrap().to_homogeneous();
         let v = na::Iso3::new((game.players[0].pos.to_vec() + na::Vec3 { y: vel0city::player::PLAYER_HALFEXTENTS.y * -0.6, ..na::zero() }) * -1.0, na::zero()).to_homogeneous();
         //l.inv();
         let view = vel0city::graphics::View {
@@ -118,9 +132,9 @@ fn main() {
             drawparams: drawparams, 
         };
 
-        if accumtime >= tick {
-            let mi = client.input.make_moveinput(&game.movesettings);
+        let mi = client.input.make_moveinput(&game.movesettings);
 
+        if accumtime >= tick {
             while accumtime >= tick {
                 accumtime -= tick;
                 let timescale = game.timescale; // borrow checker hack
@@ -139,6 +153,7 @@ fn main() {
                                       &client.playermodel,
                                       &mapmodel,
                                       &mut target);
+        client.hud.draw_for_player(&mut target, &game, 0, &mi);
         target.finish();
     }
         
