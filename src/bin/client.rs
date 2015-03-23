@@ -7,6 +7,7 @@ extern crate clock_ticks;
 #[macro_use]
 extern crate log;
 extern crate env_logger;
+extern crate image;
 
 use std::sync::Arc;
 use std::borrow::ToOwned;
@@ -14,7 +15,9 @@ use glium::DisplayBuild;
 use glium::Surface;
 
 use vel0city::assets;
+use vel0city::graphics::hud;
 use na::{
+    Diag,
     Rotation,
     ToHomogeneous,
     Inv
@@ -26,7 +29,8 @@ use std::f32::consts::{
 pub struct Client {
     playermodel: vel0city::graphics::Model,
     input: vel0city::input::Input,
-    hud: vel0city::graphics::hud::Hud,
+    hudmanager: vel0city::graphics::hud::HudManager,
+    hudelements: Vec<hud::Element>
 }
 impl Client {
     fn new(display: &glium::Display) -> Client {
@@ -50,12 +54,31 @@ impl Client {
                                                                       tex,
                                                                       display);
         let input = vel0city::input::Input::new();
-        let hud = vel0city::graphics::hud::Hud::new(display);
+        let hudmanager = hud::HudManager::new(display);
+
+        let tex = assets::load_bin_asset("textures/arrow.png").unwrap();
+        let tex = image::load(::std::old_io::BufReader::new(&tex), image::PNG).unwrap();
+        let tex = glium::Texture2d::new(display, tex);
+
+        fn id(context: &hud::Context) -> na::Mat4<f32> {
+            let ang = std::f32::consts::PI - (context.player_vel.x.atan2(context.player_vel.z) - context.eyeang.y);
+            let scale = na::norm(&na::Vec2::new(context.player_vel.x, context.player_vel.z)) / 1200.0;
+            let scalemat = na::Mat4::from_diag(&na::Vec4::new(scale, scale, scale, 1.0));
+            let rotmat = na::Rot3::new(na::Vec3::new(0.0, 0.0, ang)).to_homogeneous();
+            rotmat * scalemat
+        }
 
         Client {
             playermodel: playermodel,
             input: input,
-            hud: hud,
+            hudmanager: hudmanager,
+            hudelements: vec![hud::Element {
+                transform: na::Iso2::new(na::zero(), na::zero()),
+                element_type: hud::ElementType::TransformedBlit {
+                    texture: tex,
+                    f: id 
+                }
+            }]
         }
     }
 }
@@ -153,7 +176,12 @@ fn main() {
                                       &client.playermodel,
                                       &mapmodel,
                                       &mut target);
-        client.hud.draw_for_player(&mut target, &game, 0, &mi);
+        let hudcontext = hud::Context {
+            eyeang: game.players[0].eyeang,
+            player_vel: game.players[0].vel
+        };
+
+        client.hudmanager.draw_elements(&mut target, &hudcontext, &client.hudelements);
         target.finish();
     }
         
