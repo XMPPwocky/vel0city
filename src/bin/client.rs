@@ -27,32 +27,13 @@ use std::f32::consts::{
 };
 
 pub struct Client {
-    playermodel: vel0city::graphics::Model,
     input: vel0city::input::Input,
     hudmanager: vel0city::graphics::hud::HudManager,
-    hudelements: Vec<hud::Element>
+    hudelements: Vec<hud::Element>,
+    scene: Option<vel0city::graphics::Scene>,
 }
 impl Client {
     fn new(display: &glium::Display) -> Client {
-        let tex = vec![
-            vec![(0u8, 0u8, 0u8), (0u8, 255u8, 0u8)],
-            vec![(255u8, 0u8, 0u8), (0, 255u8, 127u8)]
-        ];
-        let tex = glium::Texture2d::new(display, tex);
-        let program = glium::Program::from_source(
-            &display,
-            &assets::load_str_asset("vertex.glsl").unwrap(),
-            &assets::load_str_asset("fragment.glsl").unwrap(),
-            None
-            ).unwrap();
-
-        let s = assets::load_str_asset("player.obj").unwrap();
-        let playerobj = &wavefront_obj::obj::parse(s).unwrap().objects[0];
-
-        let playermodel = vel0city::graphics::wavefront::obj_to_model(playerobj,
-                                                                      Arc::new(program),
-                                                                      tex,
-                                                                      display);
         let input = vel0city::input::Input::new();
         let hudmanager = hud::HudManager::new(display);
 
@@ -69,7 +50,6 @@ impl Client {
         }
 
         Client {
-            playermodel: playermodel,
             input: input,
             hudmanager: hudmanager,
             hudelements: vec![hud::Element {
@@ -78,7 +58,8 @@ impl Client {
                     texture: tex,
                     f: id 
                 }
-            }]
+            }],
+            scene: None,
         }
     }
 }
@@ -95,9 +76,6 @@ fn main() {
         .unwrap();
     let mut client = Client::new(&display);
     let (x, y) = display.get_framebuffer_dimensions();
-    let mut drawparams: glium::DrawParameters = std::default::Default::default();
-    drawparams.depth_test = glium::DepthTest::IfLess;
-    drawparams.depth_write = true;
 
     let proj = na::Persp3::new(x as f32 / y as f32, 90.0, 0.1, 8192.0).to_mat();
 
@@ -120,6 +98,7 @@ fn main() {
 
     let asset = assets::load_bin_asset("maps/test.bsp").unwrap();
     let mapmodel = vel0city::qbsp_import::import_graphics_model(&asset, &display).unwrap();
+    client.scene = Some(vel0city::graphics::Scene { map: mapmodel });
     
     let winsize = display.get_window().unwrap().get_outer_size().unwrap();
     //client.input.cursorpos = (winsize.0 as i32 / 2, winsize.1 as i32 / 2);
@@ -152,7 +131,6 @@ fn main() {
         //l.inv();
         let view = vel0city::graphics::View {
             w2s: proj * l * v,
-            drawparams: drawparams, 
         };
 
         let mi = client.input.make_moveinput(&game.movesettings);
@@ -171,11 +149,11 @@ fn main() {
 
         let mut target = display.draw();
         target.clear_depth(1.0);
-        vel0city::graphics::draw_view(&game,
-                                      &view,
-                                      &client.playermodel,
-                                      &mapmodel,
-                                      &mut target);
+        if let Some(ref scene) = client.scene {
+            vel0city::graphics::draw_scene(&mut target,
+                                           &scene,
+                                           &view);
+        };
         let hudcontext = hud::Context {
             eyeang: game.players[0].eyeang,
             player_vel: game.players[0].vel

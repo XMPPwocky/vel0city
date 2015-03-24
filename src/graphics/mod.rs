@@ -1,8 +1,10 @@
 use Game;
 use glium;
 use glium::Surface;
+use map::GraphicsMap;
 use na;
 use std::sync::Arc;
+use std::default::Default;
 
 pub mod wavefront;
 pub mod hud;
@@ -21,66 +23,44 @@ pub struct Model {
     pub texture: glium::Texture2d,
 }
 
-/// Hard to describe, but you'll know it if you see it.
 pub struct View {
     pub w2s: na::Mat4<f32>,
-    pub drawparams: glium::DrawParameters,
 }
 
-pub fn draw_view(game: &Game,
-                 view: &View,
-                 playermodel: &Model,
-                 mapmodels: &[Model],
-                 frame: &mut glium::Frame) { 
-    
-    /*{
-        let uniforms = uniform! { 
-            transform: *(view.w2s).as_array(),
-            color: &game.map.textures[0]
-        };
+pub struct Scene {
+    pub map: GraphicsMap
+}
 
-        frame.draw(&game.map.vertices,
-                   &glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
-                   &game.map.shaders[0],
-                   &uniforms,
-                   &view.drawparams).unwrap()
-    }*/
+pub fn draw_scene<S: glium::Surface>(surface: &mut S,
+                                     scene: &Scene,
+                                     view: &View) {
+    draw_map(surface, &scene.map, view);
+}
 
+fn draw_map<S: glium::Surface>(surface: &mut S, map: &GraphicsMap, view: &View) {
+    let mut drawparams: glium::DrawParameters = Default::default();
+    drawparams.depth_test = glium::DepthTest::IfLess;
+    drawparams.depth_write = true;
 
-    for mapmodel in mapmodels {
-        let samp = glium::uniforms::Sampler::new(&mapmodel.texture)
-            .wrap_function(glium::uniforms::SamplerWrapFunction::Repeat)
-            .anisotropy(4)
-            .magnify_filter(glium::uniforms::MagnifySamplerFilter::Linear)
-            .minify_filter(glium::uniforms::MinifySamplerFilter::LinearMipmapLinear);
+    for face in &map.faces {
+        let color = &map.textures[face.texture as usize];
+        let colorsamp = glium::uniforms::Sampler(color, Default::default());
+        if face.lightmap >= 0 {
+            let lightmap = &map.lightmaps[face.lightmap as usize];
 
-        let uniforms = uniform! { 
-            transform: *(view.w2s).as_array(),
-            color: samp
-        };
-        frame.draw(&mapmodel.mesh,
-                   &mapmodel.indices,
-                   &mapmodel.program,
-                   &uniforms,
-                   &view.drawparams).unwrap();
+            let uniforms = uniform! { 
+                transform: *(view.w2s).as_array(),
+                color: colorsamp,
+                lightmap: lightmap
+            };
+            surface.draw(&map.vertices,
+                       &map.indices.slice(face.index_start as usize, face.index_count as usize).unwrap(),
+                       &map.shaders[0],
+                       &uniforms,
+                       &drawparams).unwrap();
+        } else {
+    //        println!("Skipping un-lightmapped face...");
+        }
     }
-     
-    /*
-    for player in &game.players {
-        let m2w = na::Iso3 {
-            translation: player.pos.to_vec(),
-            rotation: player.eyeang.to_rot(),
-        }.to_homogeneous();
-
-        let uniforms = uniform! { 
-            transform: *(view.w2s * m2w).as_array(),
-            color: &playermodel.texture
-        };
-
-        frame.draw(&playermodel.mesh,
-                   &playermodel.indices,
-                   &playermodel.program,
-                   &uniforms,
-                   &view.drawparams).unwrap();
-    }*/
 }
+
