@@ -58,7 +58,6 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
 
 
             let mut bad = false;
-            v = pl.vel;
             for i in 0..numcontacts {
                 clip_velocity(&mut v, &contacts[i]); 
                 bad = false;
@@ -76,7 +75,7 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
                 if numcontacts == 1 {
                     warn!("Clip failed with 1 contact?")
                 } else if numcontacts == 2 {
-                    debug!("moving along crease...");
+                    println!("moving along crease...");
                     let movedir = na::normalize(&v);
                     let crease = na::cross(&contacts[0], &contacts[1]);
                     v = crease * na::dot(&v, &crease);
@@ -249,7 +248,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
 
         let updist = horiz_speed(&(pl.pos.to_vec() - startpos.to_vec()));
         let downdist = horiz_speed(&(downpos.to_vec() - startpos.to_vec()));
-        if downdist >= updist { 
+        if downdist > updist { 
             pl.pos = downpos;
             pl.vel = downvel;
         }

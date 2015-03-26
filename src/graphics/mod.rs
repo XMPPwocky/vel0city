@@ -49,7 +49,7 @@ fn draw_map<S: glium::Surface>(surface: &mut S, map: &GraphicsMap, view: &View) 
         depth_write: true,
         backface_culling: glium::BackfaceCullingMode::CullClockWise,
         polygon_mode: glium::PolygonMode::Line,
-        line_width: Some(2.5),
+        line_width: Some(1.0),
         ..Default::default()
     };
 
@@ -64,6 +64,16 @@ fn draw_map<S: glium::Surface>(surface: &mut S, map: &GraphicsMap, view: &View) 
 
             let uniforms = uniform! { 
                 transform: *(view.w2s).as_array(),
+                embiggen: 0.0,
+                color: [0.0, 0.0, 0.0, 1.0]
+            };
+            surface.draw(&map.vertices,
+                       &map.indices.slice(face.index_start as usize, face.index_count as usize).unwrap(),
+                       &map.shaders[0],
+                       &uniforms,
+                       &drawparams_back).unwrap();
+            let uniforms = uniform! { 
+                transform: *(view.w2s).as_array(),
                 color: colorsamp,
                 lightmap: lightmap
             };
@@ -72,16 +82,6 @@ fn draw_map<S: glium::Surface>(surface: &mut S, map: &GraphicsMap, view: &View) 
                        &map.shaders[1],
                        &uniforms,
                        &drawparams_main).unwrap();
-            let uniforms = uniform! { 
-                transform: *(view.w2s).as_array(),
-                embiggen: 0.05, 
-                color: [0.0, 0.0, 0.0, 1.0]
-            };
-            surface.draw(&map.vertices,
-                       &map.indices.slice(face.index_start as usize, face.index_count as usize).unwrap(),
-                       &map.shaders[0],
-                       &uniforms,
-                       &drawparams_back).unwrap();
         } else {
     //        println!("Skipping un-lightmapped face...");
         }

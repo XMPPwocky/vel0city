@@ -7,7 +7,7 @@ use self::cast::{
 };
 
 
-const EPS: f32 = 1.0/16.0;
+const EPS: f32 = 1.0/8.0;
 
 fn signcpy(n: f32, from: f32) -> f32 {
     if from >= 0.0 {
@@ -104,7 +104,7 @@ impl Brush {
             }
         }
         if sf >= start && sf <= end {
-            let toi = na::clamp(sf, 0.0, 1.0);
+            let toi = na::clamp(sf, start, end);
             return Some(CastResult {
                 toi: toi,
                 norm: norm
@@ -204,10 +204,10 @@ impl Tree {
                 fs = (d1 + pad + EPS) / td;
             } else if d2 < d1 {
                 coincident = false;
-                ns = (d1 + pad + EPS) / td;
+                ns = (d1 + pad - EPS) / td;
                 fs = (d1 - pad - EPS) / td;
             } else {
-                coincident = false;
+                coincident = true ;
                 ns = 1.0;
                 fs = 0.0;
             }
