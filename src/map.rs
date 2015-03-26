@@ -1,6 +1,5 @@
 use bsp;
 use glium;
-use graphics;
 
 pub struct Map {
     pub bsp: bsp::Tree,

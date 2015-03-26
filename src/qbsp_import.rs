@@ -46,8 +46,6 @@ pub fn import_graphics_model(data: &[u8], display: &glium::Display) -> Result<Gr
     let meshverts = try!(read_meshverts(directory.meshverts));
     let textures = try!(read_textures(directory.textures));
     let lightmaps = try!(read_lightmaps(directory.lightmaps));
-    println!("{}", lightmaps.len());
-    println!("{}", directory.lightmaps.len());
 
     let mut indices = vec![];
     let mut fixed_faces = vec![];
@@ -87,7 +85,14 @@ pub fn import_graphics_model(data: &[u8], display: &glium::Display) -> Result<Gr
         }
     }).collect();
 
-    let program = glium::Program::from_source(
+    let cel_program = glium::Program::from_source(
+        &display,
+        &assets::load_str_asset("embiggening_vertex.glsl").unwrap(),
+        &assets::load_str_asset("onecolor_fragment.glsl").unwrap(),
+        None
+        ).unwrap();
+
+    let main_program = glium::Program::from_source(
         &display,
         &assets::load_str_asset("vertex.glsl").unwrap(),
         &assets::load_str_asset("fragment.glsl").unwrap(),
@@ -97,7 +102,7 @@ pub fn import_graphics_model(data: &[u8], display: &glium::Display) -> Result<Gr
     Ok(GraphicsMap {
         vertices: glium::VertexBuffer::new(display, loaded_vertices),
         indices: glium::IndexBuffer::new(display, glium::index::TrianglesList(indices)),
-        shaders: vec![program],
+        shaders: vec![cel_program, main_program],
         textures: loaded_textures,
         lightmaps: loaded_lightmaps,
         faces: fixed_faces,

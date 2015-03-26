@@ -41,12 +41,16 @@ impl Client {
         let tex = image::load(::std::old_io::BufReader::new(&tex), image::PNG).unwrap();
         let tex = glium::Texture2d::new(display, tex);
 
-        fn id(context: &hud::Context) -> na::Mat4<f32> {
+        fn id(context: &hud::Context) -> Option<na::Mat4<f32>> {
             let ang = std::f32::consts::PI - (context.player_vel.x.atan2(context.player_vel.z) - context.eyeang.y);
             let scale = na::norm(&na::Vec2::new(context.player_vel.x, context.player_vel.z)) / 1200.0;
-            let scalemat = na::Mat4::from_diag(&na::Vec4::new(scale, scale, scale, 1.0));
-            let rotmat = na::Rot3::new(na::Vec3::new(0.0, 0.0, ang)).to_homogeneous();
-            rotmat * scalemat
+            if scale > 0.10 {
+                let scalemat = na::Mat4::from_diag(&na::Vec4::new(0.15, scale, 1.0, 1.0));
+                let rotmat = na::Rot3::new(na::Vec3::new(0.0, 0.0, ang)).to_homogeneous();
+                Some(rotmat * scalemat)
+            } else {
+                None
+            }
         }
 
         Client {

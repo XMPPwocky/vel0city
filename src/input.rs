@@ -1,7 +1,4 @@
-use na::{
-    self,
-    Rotation
-};
+use na;
 use glutin::{
     self,
 };

@@ -228,9 +228,6 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             }
         }
 
-
-
-
         let startpos = pl.pos;
         let startvel = pl.vel;
         simple_move(&game.map, pl, dt);
@@ -252,7 +249,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
 
         let updist = horiz_speed(&(pl.pos.to_vec() - startpos.to_vec()));
         let downdist = horiz_speed(&(downpos.to_vec() - startpos.to_vec()));
-        if downdist > updist { 
+        if downdist >= updist { 
             pl.pos = downpos;
             pl.vel = downvel;
         }

@@ -1,4 +1,4 @@
-#![feature(core, collections, old_io, io, path)]
+#![feature(core, old_io, io)]
 
 #[macro_use]
 extern crate "nalgebra" as na;

@@ -1,4 +1,3 @@
-use Game;
 use glium;
 use glium::Surface;
 use map::GraphicsMap;
@@ -38,13 +37,28 @@ pub fn draw_scene<S: glium::Surface>(surface: &mut S,
 }
 
 fn draw_map<S: glium::Surface>(surface: &mut S, map: &GraphicsMap, view: &View) {
-    let mut drawparams: glium::DrawParameters = Default::default();
-    drawparams.depth_test = glium::DepthTest::IfLess;
-    drawparams.depth_write = true;
+    let drawparams_main = glium::DrawParameters {
+        depth_test: glium::DepthTest::IfLess,
+        depth_write: true,
+        backface_culling: glium::BackfaceCullingMode::CullCounterClockWise,
+        ..Default::default()
+    };
+
+    let drawparams_back = glium::DrawParameters {
+        depth_test: glium::DepthTest::IfLessOrEqual,
+        depth_write: true,
+        backface_culling: glium::BackfaceCullingMode::CullClockWise,
+        polygon_mode: glium::PolygonMode::Line,
+        line_width: Some(2.5),
+        ..Default::default()
+    };
 
     for face in &map.faces {
         let color = &map.textures[face.texture as usize];
-        let colorsamp = glium::uniforms::Sampler(color, Default::default());
+        let colorsamp = glium::uniforms::Sampler::new(color)
+            .anisotropy(16)
+            .minify_filter(glium::uniforms::MinifySamplerFilter::LinearMipmapLinear);
+
         if face.lightmap >= 0 {
             let lightmap = &map.lightmaps[face.lightmap as usize];
 
@@ -55,12 +69,21 @@ fn draw_map<S: glium::Surface>(surface: &mut S, map: &GraphicsMap, view: &View) 
             };
             surface.draw(&map.vertices,
                        &map.indices.slice(face.index_start as usize, face.index_count as usize).unwrap(),
+                       &map.shaders[1],
+                       &uniforms,
+                       &drawparams_main).unwrap();
+            let uniforms = uniform! { 
+                transform: *(view.w2s).as_array(),
+                embiggen: 0.05, 
+                color: [0.0, 0.0, 0.0, 1.0]
+            };
+            surface.draw(&map.vertices,
+                       &map.indices.slice(face.index_start as usize, face.index_count as usize).unwrap(),
                        &map.shaders[0],
                        &uniforms,
-                       &drawparams).unwrap();
+                       &drawparams_back).unwrap();
         } else {
     //        println!("Skipping un-lightmapped face...");
         }
     }
 }
-

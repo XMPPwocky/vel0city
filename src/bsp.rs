@@ -7,7 +7,7 @@ use self::cast::{
 };
 
 
-const EPS: f32 = 1.0/32.0;
+const EPS: f32 = 1.0/16.0;
 
 fn signcpy(n: f32, from: f32) -> f32 {
     if from >= 0.0 {
@@ -204,7 +204,7 @@ impl Tree {
                 fs = (d1 + pad + EPS) / td;
             } else if d2 < d1 {
                 coincident = false;
-                ns = (d1 + pad - EPS) / td;
+                ns = (d1 + pad + EPS) / td;
                 fs = (d1 - pad - EPS) / td;
             } else {
                 coincident = false;
