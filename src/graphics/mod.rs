@@ -49,15 +49,18 @@ fn draw_map<S: glium::Surface>(surface: &mut S, map: &GraphicsMap, view: &View) 
         let color = &map.textures[face.texture as usize];
         let colorsamp = glium::uniforms::Sampler::new(color)
             .anisotropy(16)
+            .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest)
             .minify_filter(glium::uniforms::MinifySamplerFilter::LinearMipmapLinear);
 
         if face.lightmap >= 0 {
             let lightmap = &map.lightmaps[face.lightmap as usize];
+            let lmsamp = glium::uniforms::Sampler::new(lightmap)
+                .magnify_filter(glium::uniforms::MagnifySamplerFilter::Linear);
 
             let uniforms = uniform! { 
                 transform: *(view.w2s).as_array(),
                 color: colorsamp,
-                lightmap: lightmap
+                lightmap: lmsamp 
             };
             surface.draw(&map.vertices,
                        &map.indices.slice(face.index_start as usize, face.index_count as usize).unwrap(),

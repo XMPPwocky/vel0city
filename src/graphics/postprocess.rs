@@ -56,11 +56,19 @@ impl PostprocessSystem {
                        input: &PostprocessInputs, 
                        output: &mut S, 
                        technique: &Technique) where S: glium::Surface {
+        let colorsamp = glium::uniforms::Sampler::new(&input.color)
+            .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest);
+        let normsamp = glium::uniforms::Sampler::new(&input.normal)
+            .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest);
+        let possamp = glium::uniforms::Sampler::new(&input.position)
+            .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest);
+        let depthsamp = glium::uniforms::Sampler::new(&input.depth)
+            .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest);
         let uniforms = uniform! {
-            color_texture: &input.color,
-            normal_texture: &input.normal,
-            position_texture: &input.position,
-            depth_texture: &input.depth
+            color_texture: colorsamp,
+            normal_texture: normsamp,
+            position_texture: possamp, 
+            depth_texture: depthsamp
         };
 
         output.draw(&self.quad_verts,

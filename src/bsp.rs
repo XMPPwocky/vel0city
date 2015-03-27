@@ -103,10 +103,9 @@ impl Brush {
                 }
             }
         }
-        if sf >= start && sf <= end {
-            let toi = na::clamp(sf, start, end);
+        if sf > -1.0 && sf <= ef && sf >= start && sf <= end {
             return Some(CastResult {
-                toi: toi,
+                toi: sf,
                 norm: norm
             });
         }
@@ -204,7 +203,7 @@ impl Tree {
                 fs = (d1 + pad + EPS) / td;
             } else if d2 < d1 {
                 coincident = false;
-                ns = (d1 + pad - EPS) / td;
+                ns = (d1 + pad + EPS) / td;
                 fs = (d1 - pad - EPS) / td;
             } else {
                 coincident = true ;

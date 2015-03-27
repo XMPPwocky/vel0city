@@ -44,7 +44,7 @@ impl Client {
         fn id(context: &hud::Context) -> Option<na::Mat4<f32>> {
             let ang = std::f32::consts::PI - (context.player_vel.x.atan2(context.player_vel.z) - context.eyeang.y);
             let scale = na::norm(&na::Vec2::new(context.player_vel.x, context.player_vel.z)) / 1200.0;
-            if scale > 0.10 {
+            if scale > 0.03 {
                 let scalemat = na::Mat4::from_diag(&na::Vec4::new(0.15, scale, 1.0, 1.0));
                 let rotmat = na::Rot3::new(na::Vec3::new(0.0, 0.0, ang)).to_homogeneous();
                 Some(rotmat * scalemat)
@@ -111,13 +111,13 @@ fn main() {
     let cel_program = glium::Program::from_source(
         &display,
         &assets::load_str_asset("postprocess_vertex.glsl").unwrap(),
-        &assets::load_str_asset("cel_postprocess_fragment.glsl").unwrap(),
+        &assets::load_str_asset("postprocess_fragment.glsl").unwrap(),
         None
         ).unwrap();
     let cel_technique = vel0city::graphics::postprocess::Technique::new(
         cel_program
         );
-    let inputs = vel0city::graphics::postprocess::PostprocessInputs::new(&display, winsize);
+    let inputs = vel0city::graphics::postprocess::PostprocessInputs::new(&display, (512, 512 * winsize.1 / winsize.0));
     let fboutputs = [
         ("color_out", &inputs.color),
         ("normal_out", &inputs.normal),
