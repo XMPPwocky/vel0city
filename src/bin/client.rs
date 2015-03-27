@@ -104,8 +104,27 @@ fn main() {
     let mapmodel = vel0city::qbsp_import::import_graphics_model(&asset, &display).unwrap();
     client.scene = Some(vel0city::graphics::Scene { map: mapmodel });
     
-    let winsize = display.get_window().unwrap().get_outer_size().unwrap();
+    let winsize = display.get_window().unwrap().get_inner_size().unwrap();
     //client.input.cursorpos = (winsize.0 as i32 / 2, winsize.1 as i32 / 2);
+
+    let ppsystem = vel0city::graphics::postprocess::PostprocessSystem::new(&display);
+    let cel_program = glium::Program::from_source(
+        &display,
+        &assets::load_str_asset("postprocess_vertex.glsl").unwrap(),
+        &assets::load_str_asset("cel_postprocess_fragment.glsl").unwrap(),
+        None
+        ).unwrap();
+    let cel_technique = vel0city::graphics::postprocess::Technique::new(
+        cel_program
+        );
+    let inputs = vel0city::graphics::postprocess::PostprocessInputs::new(&display, winsize);
+    let fboutputs = [
+        ("color_out", &inputs.color),
+        ("normal_out", &inputs.normal),
+        ("position_out", &inputs.position),
+    ];
+
+    let mut framebuffer = glium::framebuffer::MultiOutputFrameBuffer::with_depth_buffer(&display, &fboutputs, &inputs.depth); 
 
     let tick = 1.0/128.0;
     let mut lasttime = clock_ticks::precise_time_s();
@@ -153,11 +172,13 @@ fn main() {
 
         let mut target = display.draw();
         target.clear_depth(1.0);
+        framebuffer.clear_depth(1.0);
         if let Some(ref scene) = client.scene {
-            vel0city::graphics::draw_scene(&mut target,
+            vel0city::graphics::draw_scene(&mut framebuffer,
                                            &scene,
                                            &view);
         };
+        ppsystem.postprocess(&inputs, &mut target, &cel_technique);
         let hudcontext = hud::Context {
             eyeang: game.players[0].eyeang,
             player_vel: game.players[0].vel

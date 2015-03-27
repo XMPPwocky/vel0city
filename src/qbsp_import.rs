@@ -85,13 +85,6 @@ pub fn import_graphics_model(data: &[u8], display: &glium::Display) -> Result<Gr
         }
     }).collect();
 
-    let cel_program = glium::Program::from_source(
-        &display,
-        &assets::load_str_asset("embiggening_vertex.glsl").unwrap(),
-        &assets::load_str_asset("onecolor_fragment.glsl").unwrap(),
-        None
-        ).unwrap();
-
     let main_program = glium::Program::from_source(
         &display,
         &assets::load_str_asset("vertex.glsl").unwrap(),
@@ -102,7 +95,7 @@ pub fn import_graphics_model(data: &[u8], display: &glium::Display) -> Result<Gr
     Ok(GraphicsMap {
         vertices: glium::VertexBuffer::new(display, loaded_vertices),
         indices: glium::IndexBuffer::new(display, glium::index::TrianglesList(indices)),
-        shaders: vec![cel_program, main_program],
+        shaders: vec![main_program],
         textures: loaded_textures,
         lightmaps: loaded_lightmaps,
         faces: fixed_faces,

@@ -7,6 +7,7 @@ use std::default::Default;
 
 pub mod wavefront;
 pub mod hud;
+pub mod postprocess;
 
 #[derive(Copy)]
 pub struct Vertex {
@@ -44,15 +45,6 @@ fn draw_map<S: glium::Surface>(surface: &mut S, map: &GraphicsMap, view: &View) 
         ..Default::default()
     };
 
-    let drawparams_back = glium::DrawParameters {
-        depth_test: glium::DepthTest::IfLessOrEqual,
-        depth_write: true,
-        backface_culling: glium::BackfaceCullingMode::CullClockWise,
-        polygon_mode: glium::PolygonMode::Line,
-        line_width: Some(1.0),
-        ..Default::default()
-    };
-
     for face in &map.faces {
         let color = &map.textures[face.texture as usize];
         let colorsamp = glium::uniforms::Sampler::new(color)
@@ -64,22 +56,12 @@ fn draw_map<S: glium::Surface>(surface: &mut S, map: &GraphicsMap, view: &View) 
 
             let uniforms = uniform! { 
                 transform: *(view.w2s).as_array(),
-                embiggen: 0.0,
-                color: [0.0, 0.0, 0.0, 1.0]
-            };
-            surface.draw(&map.vertices,
-                       &map.indices.slice(face.index_start as usize, face.index_count as usize).unwrap(),
-                       &map.shaders[0],
-                       &uniforms,
-                       &drawparams_back).unwrap();
-            let uniforms = uniform! { 
-                transform: *(view.w2s).as_array(),
                 color: colorsamp,
                 lightmap: lightmap
             };
             surface.draw(&map.vertices,
                        &map.indices.slice(face.index_start as usize, face.index_count as usize).unwrap(),
-                       &map.shaders[1],
+                       &map.shaders[0],
                        &uniforms,
                        &drawparams_main).unwrap();
         } else {
@@ -87,3 +69,10 @@ fn draw_map<S: glium::Surface>(surface: &mut S, map: &GraphicsMap, view: &View) 
         }
     }
 }
+
+#[derive(Copy)]
+pub struct QuadVertex {
+    position: [f32; 2]
+}
+implement_vertex!(QuadVertex, position);
+

@@ -1,16 +1,11 @@
 use assets;
 use glium;
+use graphics::QuadVertex;
 use na;
 use na::{
     ToHomogeneous
 };
 use std::default::Default;
-
-#[derive(Copy)]
-pub struct QuadVertex {
-    position: [f32; 2]
-}
-implement_vertex!(QuadVertex, position);
 
 pub struct HudManager {
     quad_verts: glium::VertexBuffer<QuadVertex>,
