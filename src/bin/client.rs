@@ -81,7 +81,7 @@ fn main() {
     let mut client = Client::new(&display);
     let (x, y) = display.get_framebuffer_dimensions();
 
-    let proj = na::Persp3::new(x as f32 / y as f32, 90.0, 0.1, 8192.0).to_mat();
+    let proj = na::Persp3::new(x as f32 / y as f32, 90.0, 1.5, 4096.0).to_mat();
 
     let mut game = vel0city::Game {
         movesettings: std::default::Default::default(),
@@ -102,30 +102,53 @@ fn main() {
 
     let asset = assets::load_bin_asset("maps/test.bsp").unwrap();
     let mapmodel = vel0city::qbsp_import::import_graphics_model(&asset, &display).unwrap();
-    client.scene = Some(vel0city::graphics::Scene { map: mapmodel });
+    client.scene = Some(vel0city::graphics::Scene {
+        map: mapmodel,
+        lights: vec![ vel0city::graphics::Light { position: na::zero(), intensity: 500.0, attenuation: [1.0, 0.1, 0.01], color: na::Vec3::new(1.0, 1.0, 1.0) }] 
+    });
     
     let winsize = display.get_window().unwrap().get_inner_size().unwrap();
     //client.input.cursorpos = (winsize.0 as i32 / 2, winsize.1 as i32 / 2);
 
-    let ppsystem = vel0city::graphics::postprocess::PostprocessSystem::new(&display);
+    let psystem = vel0city::graphics::passes::PassSystem::new(&display);
     let cel_program = glium::Program::from_source(
         &display,
-        &assets::load_str_asset("postprocess_vertex.glsl").unwrap(),
-        &assets::load_str_asset("postprocess_fragment.glsl").unwrap(),
+        &assets::load_str_asset("shaders/post/vertex.glsl").unwrap(),
+        &assets::load_str_asset("shaders/post/cel_fragment.glsl").unwrap(),
         None
         ).unwrap();
-    let cel_technique = vel0city::graphics::postprocess::Technique::new(
-        cel_program
-        );
-    let inputs = vel0city::graphics::postprocess::PostprocessInputs::new(&display, (512, 512 * winsize.1 / winsize.0));
-    let fboutputs = [
-        ("color_out", &inputs.color),
-        ("normal_out", &inputs.normal),
-        ("position_out", &inputs.position),
-    ];
+    let cel_technique = vel0city::graphics::passes::Technique {
+        shader: cel_program,
+        drawparams: glium::DrawParameters {
+            ..::std::default::Default::default()
+        }
+    };
+    let light_program = glium::Program::from_source(
+        &display,
+        &assets::load_str_asset("shaders/light/vertex.glsl").unwrap(),
+        &assets::load_str_asset("shaders/light/dlight_fragment.glsl").unwrap(),
+        None
+        ).unwrap();
+    let light_technique = vel0city::graphics::passes::Technique {
+        shader: light_program,
+        drawparams: glium::DrawParameters {
+            blending_function: Some(glium::BlendingFunction::Addition {
+                source: glium::LinearBlendingFactor::One,
+                destination: glium::LinearBlendingFactor::One,
+            }),
+            ..::std::default::Default::default()
+        }
+    };
 
-    let mut framebuffer = glium::framebuffer::MultiOutputFrameBuffer::with_depth_buffer(&display, &fboutputs, &inputs.depth); 
-
+    let mut prepass_data = vel0city::graphics::passes::PassData::new(&display, (winsize.0, winsize.1)); 
+    let mut lightpass_data = vel0city::graphics::passes::LightPassData::new(&display, (winsize.0, winsize.1)); 
+    let mut postprocess_data = vel0city::graphics::passes::PostprocessPassData::new(&display, (winsize.0, winsize.1)); 
+    
+    let mut particle_system = vel0city::particle::ParticleSystem {
+        particles: vec![],
+        particles_count: 0,
+        lifetime: 0.1
+    };
     let tick = 1.0/128.0;
     let mut lasttime = clock_ticks::precise_time_s();
     let mut accumtime = 0.0;
@@ -137,11 +160,30 @@ fn main() {
         smoothtime = (smoothtime*16.0 + frametime) / 17.0;
         lasttime = curtime;
         debug!("{}FPS", 1.0 / smoothtime);
+
+        particle_system.update(game.time, frametime as f32);
         
         let win = display.get_window().unwrap();
         for ev in win.poll_events() {
             client.input.handle_event(&win, &ev);
         }
+
+        let mi = client.input.make_moveinput(&game.movesettings);
+
+        if accumtime >= tick {
+            while accumtime >= tick {
+                accumtime -= tick;
+                let timescale = game.timescale; // borrow checker hack
+                let time = tick as f32 * timescale;
+                game.time += time;
+                vel0city::player::movement::move_player(&mut game, 0, &mi, time);
+                particle_system.add(vel0city::particle::Particle {
+                    position: game.players[0].pos.to_vec(),
+                    spawntime: game.time as f32
+                });
+            }
+        }
+        let pv = game.players[0].vel;
 
         let ang = game.players[0].eyeang;
         let rot = na::UnitQuat::new(na::Vec3::new(0.0, ang.y, 0.0));
@@ -153,32 +195,27 @@ fn main() {
         let v = na::Iso3::new((game.players[0].pos.to_vec() + na::Vec3 { y: vel0city::player::PLAYER_HALFEXTENTS.y * -0.6, ..na::zero() }) * -1.0, na::zero()).to_homogeneous();
         //l.inv();
         let view = vel0city::graphics::View {
+            cam: l * v,
             w2s: proj * l * v,
         };
 
-        let mi = client.input.make_moveinput(&game.movesettings);
-
-        if accumtime >= tick {
-            while accumtime >= tick {
-                accumtime -= tick;
-                let timescale = game.timescale; // borrow checker hack
-                let time = tick as f32 * timescale;
-                game.time += time;
-                vel0city::player::movement::move_player(&mut game, 0, &mi, time);
-            }
-            let pv = game.players[0].vel;
-            debug!("Player speed: {}", na::norm(&na::Vec2::new(pv.x, pv.z))); 
-        }
-
         let mut target = display.draw();
-        target.clear_depth(1.0);
-        framebuffer.clear_depth(1.0);
-        if let Some(ref scene) = client.scene {
-            vel0city::graphics::draw_scene(&mut framebuffer,
+        prepass_data.get_framebuffer(&display).clear_depth(1.0);
+        target.clear_color_and_depth((0.0, 0.0, 0.0, 0.0), 1.0);
+        if let Some(ref mut scene) = client.scene {
+            scene.lights[0].position = game.players[0].pos.to_vec() + na::Vec3::new(0.0, vel0city::player::PLAYER_HALFEXTENTS.y * 0.6, 0.0);
+            scene.lights[0].intensity = na::norm(&na::Vec2::new(pv.x, pv.z)) / 600.0;
+
+
+            vel0city::graphics::draw_scene(&mut prepass_data.get_framebuffer(&display),
                                            &scene,
                                            &view);
+            prepass_data.light.as_surface().fill(&lightpass_data.get_framebuffer(&display), glium::uniforms::MagnifySamplerFilter::Nearest);
+            psystem.light_passes(&display, &prepass_data, &mut lightpass_data, &scene.lights, &light_technique);
+            let particles_capacity = particle_system.particles.len();
+
+            psystem.postprocess(&display, &prepass_data, &lightpass_data, &mut target, &cel_technique);
         };
-        ppsystem.postprocess(&inputs, &mut target, &cel_technique);
         let hudcontext = hud::Context {
             eyeang: game.players[0].eyeang,
             player_vel: game.players[0].vel

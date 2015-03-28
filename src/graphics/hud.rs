@@ -24,8 +24,8 @@ impl HudManager {
         
         let program = glium::Program::from_source(
             d,
-            &assets::load_str_asset("hud_vertex.glsl").unwrap(),
-            &assets::load_str_asset("hud_fragment.glsl").unwrap(),
+            &assets::load_str_asset("shaders/hud_vertex.glsl").unwrap(),
+            &assets::load_str_asset("shaders/hud_fragment.glsl").unwrap(),
             None
             ).unwrap();
 

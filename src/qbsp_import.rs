@@ -87,8 +87,8 @@ pub fn import_graphics_model(data: &[u8], display: &glium::Display) -> Result<Gr
 
     let main_program = glium::Program::from_source(
         &display,
-        &assets::load_str_asset("vertex.glsl").unwrap(),
-        &assets::load_str_asset("fragment.glsl").unwrap(),
+        &assets::load_str_asset("shaders/prepass/vertex.glsl").unwrap(),
+        &assets::load_str_asset("shaders/prepass/fragment.glsl").unwrap(),
         None
         ).unwrap();
 

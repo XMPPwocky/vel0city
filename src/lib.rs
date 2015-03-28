@@ -20,6 +20,7 @@ pub mod graphics;
 pub mod input;
 pub mod map;
 pub mod player;
+pub mod particle;
 pub mod settings;
 pub mod qbsp_import;
 

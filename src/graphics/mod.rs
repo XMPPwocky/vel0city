@@ -7,7 +7,7 @@ use std::default::Default;
 
 pub mod wavefront;
 pub mod hud;
-pub mod postprocess;
+pub mod passes;
 
 #[derive(Copy)]
 pub struct Vertex {
@@ -25,10 +25,19 @@ pub struct Model {
 
 pub struct View {
     pub w2s: na::Mat4<f32>,
+    pub cam: na::Mat4<f32>,
+}
+
+pub struct Light {
+    pub position: na::Vec3<f32>,
+    pub color: na::Vec3<f32>,
+    pub intensity: f32,
+    pub attenuation: [f32; 3],
 }
 
 pub struct Scene {
-    pub map: GraphicsMap
+    pub map: GraphicsMap,
+    pub lights: Vec<Light>,
 }
 
 pub fn draw_scene<S: glium::Surface>(surface: &mut S,
@@ -42,6 +51,7 @@ fn draw_map<S: glium::Surface>(surface: &mut S, map: &GraphicsMap, view: &View) 
         depth_test: glium::DepthTest::IfLess,
         depth_write: true,
         backface_culling: glium::BackfaceCullingMode::CullCounterClockWise,
+        dithering: false,
         ..Default::default()
     };
 
@@ -58,7 +68,9 @@ fn draw_map<S: glium::Surface>(surface: &mut S, map: &GraphicsMap, view: &View) 
                 .magnify_filter(glium::uniforms::MagnifySamplerFilter::Linear);
 
             let uniforms = uniform! { 
-                transform: *(view.w2s).as_array(),
+                w2s: *(view.w2s).as_array(),
+                cam: *(view.cam).as_array(),
+                model: *na::new_identity::<na::Mat4<_>>(4).as_array(), 
                 color: colorsamp,
                 lightmap: lmsamp 
             };
@@ -68,7 +80,7 @@ fn draw_map<S: glium::Surface>(surface: &mut S, map: &GraphicsMap, view: &View) 
                        &uniforms,
                        &drawparams_main).unwrap();
         } else {
-    //        println!("Skipping un-lightmapped face...");
+    println!("Skipping un-lightmapped face...");
         }
     }
 }

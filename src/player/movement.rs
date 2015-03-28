@@ -141,6 +141,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                     pl.vel.y = -jspeed; 
 
                     pl.flags.remove(PLAYER_ONGROUND);
+                    pl.landtime = 0.0;
                 }
                 pl.flags.insert(PLAYER_HOLDING_JUMP);
             }
