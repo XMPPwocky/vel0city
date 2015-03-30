@@ -184,7 +184,7 @@ impl Tree {
 
         let pad = na::abs(&(ray.halfextents.x * plane.norm.x)) +
             na::abs(&(ray.halfextents.y * plane.norm.y)) + 
-            na::abs(&(ray.halfextents.z * plane.norm.z));
+            na::abs(&(ray.halfextents.z * plane.norm.z)) + 0.5 * EPS;
 
 
         // How does the ray interact with this plane?

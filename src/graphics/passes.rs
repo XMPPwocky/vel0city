@@ -23,11 +23,11 @@ pub struct PassData {
 
 impl PassData {
     pub fn new(d: &glium::Display, dimensions: (u32, u32)) -> PassData {
-        let color = glium::texture::Texture2d::new_empty(&d, glium::texture::UncompressedFloatFormat::F32F32F32F32, dimensions.0, dimensions.1); 
-        let light = glium::texture::Texture2d::new_empty(&d, glium::texture::UncompressedFloatFormat::F32F32F32F32, dimensions.0, dimensions.1); 
-        let normal = glium::texture::Texture2d::new_empty(&d, glium::texture::UncompressedFloatFormat::F32F32F32F32, dimensions.0, dimensions.1); 
-        let position = glium::texture::Texture2d::new_empty(&d, glium::texture::UncompressedFloatFormat::F32F32F32F32, dimensions.0, dimensions.1); 
-        let depth = glium::texture::DepthTexture2d::new_empty(&d, glium::texture::DepthFormat::F32, dimensions.0, dimensions.1); 
+        let color = glium::texture::Texture2d::new_empty(d, glium::texture::UncompressedFloatFormat::F32F32F32F32, dimensions.0, dimensions.1); 
+        let light = glium::texture::Texture2d::new_empty(d, glium::texture::UncompressedFloatFormat::F32F32F32F32, dimensions.0, dimensions.1); 
+        let normal = glium::texture::Texture2d::new_empty(d, glium::texture::UncompressedFloatFormat::F32F32F32F32, dimensions.0, dimensions.1); 
+        let position = glium::texture::Texture2d::new_empty(d, glium::texture::UncompressedFloatFormat::F32F32F32F32, dimensions.0, dimensions.1); 
+        let depth = glium::texture::DepthTexture2d::new_empty(d, glium::texture::DepthFormat::F32, dimensions.0, dimensions.1); 
 
         PassData {
             color: color,
@@ -44,7 +44,7 @@ impl PassData {
             ("normal_out", &self.normal),
             ("position_out", &self.position),
         ];
-        glium::framebuffer::MultiOutputFrameBuffer::with_depth_buffer(&display, &fboutputs, &self.depth)
+        glium::framebuffer::MultiOutputFrameBuffer::with_depth_buffer(display, &fboutputs, &self.depth)
     }
 }
 
@@ -53,14 +53,14 @@ pub struct PostprocessPassData {
 }
 impl PostprocessPassData {
     pub fn new(d: &glium::Display, dimensions: (u32, u32)) -> PostprocessPassData {
-        let color = glium::texture::Texture2d::new_empty(&d, glium::texture::UncompressedFloatFormat::F32F32F32F32, dimensions.0, dimensions.1); 
+        let color = glium::texture::Texture2d::new_empty(d, glium::texture::UncompressedFloatFormat::F32F32F32F32, dimensions.0, dimensions.1); 
 
         PostprocessPassData {
             color: color,
         }
     }
     pub fn get_framebuffer(&self, display: &glium::Display) -> glium::framebuffer::SimpleFrameBuffer {
-        glium::framebuffer::SimpleFrameBuffer::new(&display, &self.color)
+        glium::framebuffer::SimpleFrameBuffer::new(display, &self.color)
     }
 }
 pub struct LightPassData {
@@ -68,14 +68,14 @@ pub struct LightPassData {
 }
 impl LightPassData {
     pub fn new(d: &glium::Display, dimensions: (u32, u32)) -> LightPassData {
-        let light = glium::texture::Texture2d::new_empty(&d, glium::texture::UncompressedFloatFormat::F32F32F32F32, dimensions.0, dimensions.1); 
+        let light = glium::texture::Texture2d::new_empty(d, glium::texture::UncompressedFloatFormat::F32F32F32F32, dimensions.0, dimensions.1); 
 
         LightPassData {
             light: light,
         }
     }
     pub fn get_framebuffer(&self, display: &glium::Display) -> glium::framebuffer::SimpleFrameBuffer {
-        glium::framebuffer::SimpleFrameBuffer::new(&display, &self.light)
+        glium::framebuffer::SimpleFrameBuffer::new(display, &self.light)
     }
 }
 pub struct PassSystem {

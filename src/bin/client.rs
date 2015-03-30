@@ -1,8 +1,10 @@
+#![feature(core)]
+
 extern crate glium;
 extern crate glutin;
 extern crate vel0city;
 extern crate wavefront_obj;
-extern crate "nalgebra" as na;
+extern crate nalgebra as na;
 extern crate clock_ticks;
 #[macro_use]
 extern crate log;
@@ -38,7 +40,7 @@ impl Client {
         let hudmanager = hud::HudManager::new(display);
 
         let tex = assets::load_bin_asset("textures/arrow.png").unwrap();
-        let tex = image::load(::std::old_io::BufReader::new(&tex), image::PNG).unwrap();
+        let tex = image::load(std::io::Cursor::new(tex), image::PNG).unwrap();
         let tex = glium::Texture2d::new(display, tex);
 
         fn id(context: &hud::Context) -> Option<na::Mat4<f32>> {
@@ -140,15 +142,10 @@ fn main() {
         }
     };
 
-    let mut prepass_data = vel0city::graphics::passes::PassData::new(&display, (winsize.0, winsize.1)); 
+    let prepass_data = vel0city::graphics::passes::PassData::new(&display, (winsize.0, winsize.1)); 
     let mut lightpass_data = vel0city::graphics::passes::LightPassData::new(&display, (winsize.0, winsize.1)); 
-    let mut postprocess_data = vel0city::graphics::passes::PostprocessPassData::new(&display, (winsize.0, winsize.1)); 
+    let postprocess_data = vel0city::graphics::passes::PostprocessPassData::new(&display, (winsize.0, winsize.1)); 
     
-    let mut particle_system = vel0city::particle::ParticleSystem {
-        particles: vec![],
-        particles_count: 0,
-        lifetime: 0.1
-    };
     let tick = 1.0/128.0;
     let mut lasttime = clock_ticks::precise_time_s();
     let mut accumtime = 0.0;
@@ -157,12 +154,10 @@ fn main() {
         let curtime = clock_ticks::precise_time_s();
         let frametime = curtime - lasttime;
         accumtime += frametime;
-        smoothtime = (smoothtime*16.0 + frametime) / 17.0;
+        smoothtime = (smoothtime + frametime) / 2.0;
         lasttime = curtime;
-        debug!("{}FPS", 1.0 / smoothtime);
+        println!("{}FPS", 1.0 / smoothtime);
 
-        particle_system.update(game.time, frametime as f32);
-        
         let win = display.get_window().unwrap();
         for ev in win.poll_events() {
             client.input.handle_event(&win, &ev);
@@ -177,10 +172,6 @@ fn main() {
                 let time = tick as f32 * timescale;
                 game.time += time;
                 vel0city::player::movement::move_player(&mut game, 0, &mi, time);
-                particle_system.add(vel0city::particle::Particle {
-                    position: game.players[0].pos.to_vec(),
-                    spawntime: game.time as f32
-                });
             }
         }
         let pv = game.players[0].vel;
@@ -201,7 +192,7 @@ fn main() {
 
         let mut target = display.draw();
         prepass_data.get_framebuffer(&display).clear_depth(1.0);
-        target.clear_color_and_depth((0.0, 0.0, 0.0, 0.0), 1.0);
+        target.clear_depth(1.0);
         if let Some(ref mut scene) = client.scene {
             scene.lights[0].position = game.players[0].pos.to_vec() + na::Vec3::new(0.0, vel0city::player::PLAYER_HALFEXTENTS.y * 0.6, 0.0);
             scene.lights[0].intensity = na::norm(&na::Vec2::new(pv.x, pv.z)) / 600.0;
@@ -212,7 +203,6 @@ fn main() {
                                            &view);
             prepass_data.light.as_surface().fill(&lightpass_data.get_framebuffer(&display), glium::uniforms::MagnifySamplerFilter::Nearest);
             psystem.light_passes(&display, &prepass_data, &mut lightpass_data, &scene.lights, &light_technique);
-            let particles_capacity = particle_system.particles.len();
 
             psystem.postprocess(&display, &prepass_data, &lightpass_data, &mut target, &cel_technique);
         };
@@ -221,7 +211,7 @@ fn main() {
             player_vel: game.players[0].vel
         };
 
-        client.hudmanager.draw_elements(&mut target, &hudcontext, &client.hudelements);
+        //client.hudmanager.draw_elements(&mut target, &hudcontext, &client.hudelements);
         target.finish();
     }
         

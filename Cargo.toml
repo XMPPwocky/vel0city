@@ -9,15 +9,6 @@ debug = true
 rpath = false
 lto = false 
 
-[dependencies.nalgebra]
-git = "https://github.com/sebcrozet/nalgebra"
-
-[dependencies.capnp]
-git = "https://github.com/dwrensha/capnproto-rust"
-
-[build-dependencies.capnpc]
-git = "https://github.com/dwrensha/capnpc-rust"
-
 [dependencies.wavefront_obj]
 git = "https://github.com/PistonDevelopers/wavefront_obj"
 
@@ -39,3 +30,4 @@ bitflags = "*"
 glutin = "*"
 log = "*"
 env_logger = "*"
+nalgebra = "*"

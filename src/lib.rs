@@ -1,13 +1,13 @@
 #![feature(core, old_io, io)]
 
 #[macro_use]
-extern crate "nalgebra" as na;
+extern crate nalgebra as na;
 extern crate byteorder;
 #[macro_use]
 extern crate glium;
 extern crate glutin;
 extern crate image;
-extern crate "rustc-serialize" as rustc_serialize;
+extern crate rustc_serialize; 
 #[macro_use]
 extern crate bitflags;
 extern crate wavefront_obj;

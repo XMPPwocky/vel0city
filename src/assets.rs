@@ -4,7 +4,8 @@ use std::fs::File;
 use std::path::PathBuf;
 
 fn name_to_path(name: &str) -> PathBuf {
-    let mut path = PathBuf::new("assets/");
+    let mut path = PathBuf::new();
+    path.push("assets/");
     path.push(name);
     path
 }
