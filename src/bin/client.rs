@@ -11,7 +11,6 @@ extern crate log;
 extern crate env_logger;
 extern crate image;
 
-use std::sync::Arc;
 use std::borrow::ToOwned;
 use glium::DisplayBuild;
 use glium::Surface;
@@ -106,10 +105,17 @@ fn main() {
     let mapmodel = vel0city::qbsp_import::import_graphics_model(&asset, &display).unwrap();
     client.scene = Some(vel0city::graphics::Scene {
         map: mapmodel,
-        lights: vec![ vel0city::graphics::Light { position: na::zero(), intensity: 500.0, attenuation: [1.0, 0.1, 0.01], color: na::Vec3::new(1.0, 1.0, 1.0) }] 
+        lights: vec![ vel0city::graphics::Light { position: na::zero(), intensity: 0.0, radius: 6.0, color: na::Vec3::new(1.0, 1.0, 1.0) }] 
     });
     
-    let winsize = display.get_window().unwrap().get_inner_size().unwrap();
+    let mut winsize;
+    {
+        let window = display.get_window().unwrap();
+        winsize = window.get_inner_size().unwrap();
+        /*if window.set_cursor_state(glutin::CursorState::Grab).is_err() {
+            println!("Failed to grab cursor, oh well");
+        }*/
+    }
     //client.input.cursorpos = (winsize.0 as i32 / 2, winsize.1 as i32 / 2);
 
     let psystem = vel0city::graphics::passes::PassSystem::new(&display);
@@ -142,9 +148,7 @@ fn main() {
         }
     };
 
-    let prepass_data = vel0city::graphics::passes::PassData::new(&display, (winsize.0, winsize.1)); 
-    let mut lightpass_data = vel0city::graphics::passes::LightPassData::new(&display, (winsize.0, winsize.1)); 
-    let postprocess_data = vel0city::graphics::passes::PostprocessPassData::new(&display, (winsize.0, winsize.1)); 
+    let mut pass_data = vel0city::graphics::passes::PassData::new(&display, (winsize.0, winsize.1)); 
     
     let tick = 1.0/128.0;
     let mut lasttime = clock_ticks::precise_time_s();
@@ -156,10 +160,19 @@ fn main() {
         accumtime += frametime;
         smoothtime = (smoothtime + frametime) / 2.0;
         lasttime = curtime;
-        println!("{}FPS", 1.0 / smoothtime);
+        println!("frametime: {}us", smoothtime * 1000.0 * 1000.0);
 
         let win = display.get_window().unwrap();
         for ev in win.poll_events() {
+            match &ev {
+                &glutin::Event::Resized(width, height) => {
+                    winsize = (width, height);
+                    pass_data = vel0city::graphics::passes::PassData::new(&display, (winsize.0, winsize.1)); 
+                    client.input.cursorpos = (winsize.0 as i32 / 2, winsize.1 as i32 / 2);
+                },
+                _ => ()
+            }
+
             client.input.handle_event(&win, &ev);
         }
 
@@ -191,20 +204,18 @@ fn main() {
         };
 
         let mut target = display.draw();
-        prepass_data.get_framebuffer(&display).clear_depth(1.0);
-        target.clear_depth(1.0);
+        pass_data.get_framebuffer_for_prepass(&display).clear_depth(1.0);
         if let Some(ref mut scene) = client.scene {
             scene.lights[0].position = game.players[0].pos.to_vec() + na::Vec3::new(0.0, vel0city::player::PLAYER_HALFEXTENTS.y * 0.6, 0.0);
-            scene.lights[0].intensity = na::norm(&na::Vec2::new(pv.x, pv.z)) / 600.0;
+            scene.lights[0].intensity = na::clamp(na::norm(&na::Vec2::new(pv.x, pv.z)) / 100.0, 0.0, 10.0);
 
 
-            vel0city::graphics::draw_scene(&mut prepass_data.get_framebuffer(&display),
+            vel0city::graphics::draw_scene(&mut pass_data.get_framebuffer_for_prepass(&display),
                                            &scene,
                                            &view);
-            prepass_data.light.as_surface().fill(&lightpass_data.get_framebuffer(&display), glium::uniforms::MagnifySamplerFilter::Nearest);
-            psystem.light_passes(&display, &prepass_data, &mut lightpass_data, &scene.lights, &light_technique);
+            psystem.light_passes(&display, &mut pass_data, &scene.lights, &view, &light_technique);
 
-            psystem.postprocess(&display, &prepass_data, &lightpass_data, &mut target, &cel_technique);
+            psystem.postprocess(&pass_data, &mut target, &cel_technique);
         };
         let hudcontext = hud::Context {
             eyeang: game.players[0].eyeang,

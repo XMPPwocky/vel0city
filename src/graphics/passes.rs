@@ -2,6 +2,8 @@ use graphics::QuadVertex;
 use graphics::Light;
 use glium;
 use glium::Surface;
+use graphics::View;
+use na;
 
 pub struct Technique {
     pub shader: glium::Program,
@@ -14,7 +16,7 @@ impl Technique {
 }
 
 pub struct PassData {
-    pub color: glium::Texture2d, 
+    pub diffuse: glium::Texture2d, 
     pub light: glium::Texture2d, 
     pub normal: glium::Texture2d,
     pub position: glium::Texture2d,
@@ -23,64 +25,39 @@ pub struct PassData {
 
 impl PassData {
     pub fn new(d: &glium::Display, dimensions: (u32, u32)) -> PassData {
-        let color = glium::texture::Texture2d::new_empty(d, glium::texture::UncompressedFloatFormat::F32F32F32F32, dimensions.0, dimensions.1); 
+        let diffuse = glium::texture::Texture2d::new_empty(d, glium::texture::UncompressedFloatFormat::F32F32F32F32, dimensions.0, dimensions.1); 
         let light = glium::texture::Texture2d::new_empty(d, glium::texture::UncompressedFloatFormat::F32F32F32F32, dimensions.0, dimensions.1); 
         let normal = glium::texture::Texture2d::new_empty(d, glium::texture::UncompressedFloatFormat::F32F32F32F32, dimensions.0, dimensions.1); 
         let position = glium::texture::Texture2d::new_empty(d, glium::texture::UncompressedFloatFormat::F32F32F32F32, dimensions.0, dimensions.1); 
         let depth = glium::texture::DepthTexture2d::new_empty(d, glium::texture::DepthFormat::F32, dimensions.0, dimensions.1); 
 
         PassData {
-            color: color,
+            diffuse: diffuse,
             light: light,
             normal: normal,
             position: position,
             depth: depth
         }
     }
-    pub fn get_framebuffer(&self, display: &glium::Display) -> glium::framebuffer::MultiOutputFrameBuffer {
+    pub fn get_framebuffer_for_prepass(&self, display: &glium::Display) -> glium::framebuffer::MultiOutputFrameBuffer {
         let fboutputs = [
-            ("color_out", &self.color),
+            ("diffuse_out", &self.diffuse),
             ("light_out", &self.light),
             ("normal_out", &self.normal),
             ("position_out", &self.position),
         ];
         glium::framebuffer::MultiOutputFrameBuffer::with_depth_buffer(display, &fboutputs, &self.depth)
     }
+    pub fn get_framebuffer_for_lightpass(&self, display: &glium::Display) -> glium::framebuffer::MultiOutputFrameBuffer {
+        let fboutputs = [
+            ("light_out", &self.light),
+        ];
+        glium::framebuffer::MultiOutputFrameBuffer::with_depth_buffer(display, &fboutputs, &self.depth)
+    }
 }
 
-pub struct PostprocessPassData {
-    pub color: glium::Texture2d, 
-}
-impl PostprocessPassData {
-    pub fn new(d: &glium::Display, dimensions: (u32, u32)) -> PostprocessPassData {
-        let color = glium::texture::Texture2d::new_empty(d, glium::texture::UncompressedFloatFormat::F32F32F32F32, dimensions.0, dimensions.1); 
-
-        PostprocessPassData {
-            color: color,
-        }
-    }
-    pub fn get_framebuffer(&self, display: &glium::Display) -> glium::framebuffer::SimpleFrameBuffer {
-        glium::framebuffer::SimpleFrameBuffer::new(display, &self.color)
-    }
-}
-pub struct LightPassData {
-    pub light: glium::Texture2d, 
-}
-impl LightPassData {
-    pub fn new(d: &glium::Display, dimensions: (u32, u32)) -> LightPassData {
-        let light = glium::texture::Texture2d::new_empty(d, glium::texture::UncompressedFloatFormat::F32F32F32F32, dimensions.0, dimensions.1); 
-
-        LightPassData {
-            light: light,
-        }
-    }
-    pub fn get_framebuffer(&self, display: &glium::Display) -> glium::framebuffer::SimpleFrameBuffer {
-        glium::framebuffer::SimpleFrameBuffer::new(display, &self.light)
-    }
-}
 pub struct PassSystem {
     quad_verts: glium::VertexBuffer<QuadVertex>,
-    quad_indices: glium::IndexBuffer,
 }
 impl PassSystem {
     pub fn new(d: &glium::Display) -> PassSystem {
@@ -90,32 +67,28 @@ impl PassSystem {
             QuadVertex { position: [-1.0, 1.0] },
             QuadVertex { position: [1.0, 1.0] },
         ];
-        let indices = glium::index::TriangleStrip(vec![0u8, 1, 2, 3]);
 
         PassSystem {
             quad_verts: glium::VertexBuffer::new(d, verts),
-            quad_indices: glium::IndexBuffer::new(d, indices),
         }
     }
 
     pub fn postprocess<S>(&self,
-                       display: &glium::Display,
-                       input_prepass: &PassData, 
-                       input_light: &LightPassData, 
+                       input: &PassData, 
                        output: &mut S, 
                        technique: &Technique) where S: glium::Surface { 
-        let colorsamp = glium::uniforms::Sampler::new(&input_prepass.color)
+        let diffusesamp = glium::uniforms::Sampler::new(&input.diffuse)
             .magnify_filter(glium::uniforms::MagnifySamplerFilter::Linear);
-        let normsamp = glium::uniforms::Sampler::new(&input_prepass.normal)
+        let normsamp = glium::uniforms::Sampler::new(&input.normal)
             .magnify_filter(glium::uniforms::MagnifySamplerFilter::Linear);
-        let possamp = glium::uniforms::Sampler::new(&input_prepass.position)
+        let possamp = glium::uniforms::Sampler::new(&input.position)
             .magnify_filter(glium::uniforms::MagnifySamplerFilter::Linear);
-        let depthsamp = glium::uniforms::Sampler::new(&input_prepass.depth)
+        let depthsamp = glium::uniforms::Sampler::new(&input.depth)
             .magnify_filter(glium::uniforms::MagnifySamplerFilter::Linear);
-        let lightsamp = glium::uniforms::Sampler::new(&input_light.light)
+        let lightsamp = glium::uniforms::Sampler::new(&input.light)
             .magnify_filter(glium::uniforms::MagnifySamplerFilter::Linear);
         let uniforms = uniform! {
-            color_texture: colorsamp,
+            diffuse_texture: diffusesamp,
             normal_texture: normsamp,
             position_texture: possamp, 
             depth_texture: depthsamp,
@@ -123,7 +96,7 @@ impl PassSystem {
         };
 
         output.draw(&self.quad_verts,
-                         &self.quad_indices,
+                    &glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip),
                          &technique.shader,
                          &uniforms,
                          &technique.drawparams).unwrap();
@@ -131,41 +104,39 @@ impl PassSystem {
 
     pub fn light_passes(&self,
                         display: &glium::Display,
-                       input: &PassData, 
-                       output: &mut LightPassData, 
+                       data: &mut PassData, 
                        lights: &[Light],
+                       view: &View,
                        technique: &Technique) { 
-        let mut framebuffer = output.get_framebuffer(display);
+        let mut framebuffer = data.get_framebuffer_for_lightpass(display);
         for light in lights {
-            let colorsamp = glium::uniforms::Sampler::new(&input.color)
+            let diffusesamp = glium::uniforms::Sampler::new(&data.diffuse)
                 .magnify_filter(glium::uniforms::MagnifySamplerFilter::Linear);
-            let normsamp = glium::uniforms::Sampler::new(&input.normal)
+            let normsamp = glium::uniforms::Sampler::new(&data.normal)
                 .magnify_filter(glium::uniforms::MagnifySamplerFilter::Linear);
-            let possamp = glium::uniforms::Sampler::new(&input.position)
-                .magnify_filter(glium::uniforms::MagnifySamplerFilter::Linear);
-            let depthsamp = glium::uniforms::Sampler::new(&input.depth)
-                .magnify_filter(glium::uniforms::MagnifySamplerFilter::Linear);
-            let lightsamp = glium::uniforms::Sampler::new(&input.light)
+            let possamp = glium::uniforms::Sampler::new(&data.position)
                 .magnify_filter(glium::uniforms::MagnifySamplerFilter::Linear);
 
             let uniforms = uniform! {
-                color_texture: colorsamp,
+                diffuse_texture: diffusesamp,
                 normal_texture: normsamp,
                 position_texture: possamp, 
-                depth_texture: depthsamp,
-                light_texture: lightsamp,
+
+                cam_inv: *na::inv(&view.cam).unwrap().as_array(),
 
                 light_position: *light.position.as_array(),
                 light_intensity: light.intensity,
-                light_attenuation: light.attenuation,
-                light_color: *light.color.as_array()
+                light_radius: light.radius,
+                light_color: *light.color.as_array(),
+                light_cutoff: 0.01,
+                light_max_distance: light.radius * ((light.intensity / 0.01).sqrt() - 1.0)
             };
 
             framebuffer.draw(&self.quad_verts,
-                        &self.quad_indices,
-                        &technique.shader,
-                        &uniforms,
-                        &technique.drawparams).unwrap();
+                             &glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip),
+                             &technique.shader,
+                             &uniforms,
+                             &technique.drawparams).unwrap();
         }
     }
 }

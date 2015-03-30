@@ -32,7 +32,7 @@ pub struct Light {
     pub position: na::Vec3<f32>,
     pub color: na::Vec3<f32>,
     pub intensity: f32,
-    pub attenuation: [f32; 3],
+    pub radius: f32, 
 }
 
 pub struct Scene {
@@ -51,7 +51,6 @@ fn draw_map<S: glium::Surface>(surface: &mut S, map: &GraphicsMap, view: &View) 
         depth_test: glium::DepthTest::IfLess,
         depth_write: true,
         backface_culling: glium::BackfaceCullingMode::CullCounterClockWise,
-        dithering: false,
         ..Default::default()
     };
 
@@ -71,7 +70,7 @@ fn draw_map<S: glium::Surface>(surface: &mut S, map: &GraphicsMap, view: &View) 
                 w2s: *(view.w2s).as_array(),
                 cam: *(view.cam).as_array(),
                 model: *na::new_identity::<na::Mat4<_>>(4).as_array(), 
-                color: colorsamp,
+                diffuse: colorsamp,
                 lightmap: lmsamp 
             };
             surface.draw(&map.vertices,
