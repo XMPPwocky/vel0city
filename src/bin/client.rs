@@ -211,7 +211,7 @@ fn main() {
             player_vel: game.players[0].vel
         };
 
-        //client.hudmanager.draw_elements(&mut target, &hudcontext, &client.hudelements);
+        client.hudmanager.draw_elements(&mut target, &hudcontext, &client.hudelements);
         target.finish();
     }
         
