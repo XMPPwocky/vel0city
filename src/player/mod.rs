@@ -20,6 +20,8 @@ pub struct Player {
     pub eyeheight: f32,
     pub halfextents: na::Vec3<f32>,
     pub eyeang: na::Vec3<f32>,
+    pub viewpunch: na::Vec3<f32>,
+    pub viewpunch_vel: na::Vec3<f32>,
     pub landtime: f32,
     pub holdjumptime: f32,
 }

@@ -111,9 +111,43 @@ fn horiz_speed(vel: &na::Vec3<f32>) -> f32 {
     na::norm(&na::Vec2::new(vel.x, vel.z))
 }
 
+fn decay_punch_component(c: f32, dt: f32, scale: f32) -> f32 {
+    use std::num::Float;
+
+    if c >= 0.001 {
+        let k = c * 2.0.powf(-1.0 * scale * dt);
+        if k > 0.001 {
+            k
+        } else {
+            0.0
+        }
+    } else if c <= -0.001 {
+        let k = c * 2.0.powf(-1.0 * scale * dt); 
+        if k < -0.001 {
+            k
+        } else {
+            0.0
+        }
+    } else { 0.0 }
+}
+
+fn decay_punch(punch: na::Vec3<f32>, dt: f32, scale: f32) -> na::Vec3<f32> {
+    na::Vec3::new(
+        decay_punch_component(punch.x, dt, scale),
+        decay_punch_component(punch.y, dt, scale),
+        decay_punch_component(punch.z, dt, scale)
+        )
+}
+
+
+
 pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) {
     {
         let pl = &mut game.players[playeridx as usize];
+        pl.viewpunch = pl.viewpunch + pl.viewpunch_vel * dt;
+        pl.viewpunch = decay_punch(pl.viewpunch, dt, 18.0); 
+        pl.viewpunch_vel = decay_punch(pl.viewpunch_vel, dt, 35.0); 
+        
         if input.reset {
             pl.pos = na::Pnt3::new(0.0, -10.0, 0.0);
             pl.vel = na::zero();
@@ -138,10 +172,9 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                 if pl.flags.contains(PLAYER_ONGROUND) {
                     let jspeed = game.movesettings.jumpspeed;
 
-                    pl.vel.y = -jspeed; 
+                    pl.viewpunch_vel.x += 3.0;
 
-                    pl.flags.remove(PLAYER_ONGROUND);
-                    pl.landtime = 0.0;
+                    pl.vel.y = -jspeed; 
                 }
                 pl.flags.insert(PLAYER_HOLDING_JUMP);
             }
@@ -205,7 +238,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         let cast = game.map.bsp.cast_ray(&downray);
 
         let hit_floor = if let Some(bsp::cast::CastResult { norm, toi, ..}) = cast {
-            if toi == 0.0 && norm.y < -0.7 {
+            if toi <= 0.0 && norm.y < -0.7 {
                 true
             } else {
                 false
@@ -217,6 +250,9 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             if !pl.flags.contains(PLAYER_ONGROUND) {
                 pl.flags.insert(PLAYER_ONGROUND);
                 pl.landtime = game.time; 
+                if pl.vel.y >= 0.0 { 
+                    pl.viewpunch_vel.x -= 3.0; 
+                }
             }
         } else {
             pl.flags.remove(PLAYER_ONGROUND);
