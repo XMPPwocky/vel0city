@@ -179,9 +179,13 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         }
 
         let curvel = na::Vec3::new(pl.vel.x, pl.vel.y, pl.vel.z);
-        let wishspeed = na::clamp(na::norm(&input.wishvel), 0.0, speedcap);
+        let wishvel = na::rotate(
+            &na::Rot3::new(na::Vec3::new(0.0, input.eyeang.y, 0.0)),
+            &input.wishvel);
+
+        let wishspeed = na::clamp(na::norm(&wishvel), 0.0, speedcap);
         if !na::approx_eq(&wishspeed, &0.0) { 
-            let movedir = na::normalize(&input.wishvel);
+            let movedir = na::normalize(&wishvel);
 
             let curspeed = na::dot(&curvel, &movedir); 
             // movespeed, not speedcap, or airaccel is way too low

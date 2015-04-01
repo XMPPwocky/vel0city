@@ -128,8 +128,8 @@ impl PassSystem {
                 light_intensity: light.intensity,
                 light_radius: light.radius,
                 light_color: *light.color.as_array(),
-                light_cutoff: 0.0008,
-                light_max_distance: light.radius * ((light.intensity / 0.0008).sqrt() - 1.0)
+                light_cutoff: 0.0003,
+                light_max_distance: light.radius * ((light.intensity / 0.0003).sqrt() - 1.0)
             };
 
             framebuffer.draw(&self.quad_verts,

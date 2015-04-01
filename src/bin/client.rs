@@ -25,6 +25,7 @@ use na::{
 };
 use std::f32::consts::{
     PI,
+    PI_2, 
 };
 
 pub struct Client {
@@ -105,16 +106,14 @@ fn main() {
     let mapmodel = vel0city::qbsp_import::import_graphics_model(&asset, &display).unwrap();
     client.scene = Some(vel0city::graphics::Scene {
         map: mapmodel,
-        lights: vec![ vel0city::graphics::Light { position: na::zero(), intensity: 0.0, radius: 4.0, color: na::Vec3::new(1.0, 1.0, 1.0) }] 
+        lights: vec![ vel0city::graphics::Light { position: na::zero(), intensity: 0.0, radius: 2.0, color: na::Vec3::new(1.0, 0.1, 0.1) }] 
     });
     
     let mut winsize;
     {
         let window = display.get_window().unwrap();
         winsize = window.get_inner_size().unwrap();
-        /*if window.set_cursor_state(glutin::CursorState::Grab).is_err() {
-            println!("Failed to grab cursor, oh well");
-        }*/
+        window.set_cursor_state(glutin::CursorState::Hide).unwrap();
     }
     //client.input.cursorpos = (winsize.0 as i32 / 2, winsize.1 as i32 / 2);
 
@@ -196,7 +195,7 @@ fn main() {
             );
 
         let l = na::Iso3::new_with_rotmat(na::zero(), rot.to_rot()).inv().unwrap().to_homogeneous();
-        let v = na::Iso3::new((game.players[0].pos.to_vec() + na::Vec3 { y: vel0city::player::PLAYER_HALFEXTENTS.y * -0.6, ..na::zero() }) * -1.0, na::zero()).to_homogeneous();
+        let v = na::Iso3::new((game.players[0].pos.to_vec() + na::Vec3 { y: vel0city::player::PLAYER_HALFEXTENTS.y * -1.0, ..na::zero() }) * -1.0, na::zero()).to_homogeneous();
         //l.inv();
         let view = vel0city::graphics::View {
             cam: l * v,
@@ -207,7 +206,7 @@ fn main() {
         pass_data.get_framebuffer_for_prepass(&display).clear_depth(1.0);
         if let Some(ref mut scene) = client.scene {
             scene.lights[0].position = game.players[0].pos.to_vec() + na::Vec3::new(0.0, vel0city::player::PLAYER_HALFEXTENTS.y * 0.1, 0.0);
-            scene.lights[0].intensity = na::clamp(na::norm(&na::Vec2::new(pv.x, pv.z)) / 100.0, 2.0, 10.0);
+            scene.lights[0].intensity = na::clamp(na::norm(&na::Vec2::new(pv.x, pv.z)) / 3.5, 10.0, 30.0);
 
 
             vel0city::graphics::draw_scene(&mut pass_data.get_framebuffer_for_prepass(&display),

@@ -41,7 +41,7 @@ impl Input {
             cursorpos: (400, 300),
             hack: false,
             settings: InputSettings {
-                sensitivity: 0.0033,
+                sensitivity: 0.001,
                 /*
                 forwardkey: W,
                 backkey: A,
@@ -128,10 +128,6 @@ impl Input {
         }
         let jump = self.buttons.contains(BUTTON_JUMP);
         let reset = self.buttons.contains(BUTTON_RESET);
-
-        let wvel = na::rotate(
-            &na::Rot3::new(na::Vec3::new(0.0, self.ang.y, 0.0)),
-            &wvel);
 
         MoveInput {
             wishvel: wvel,
