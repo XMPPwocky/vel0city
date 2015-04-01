@@ -145,7 +145,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
     {
         let pl = &mut game.players[playeridx as usize];
         pl.viewpunch = pl.viewpunch + pl.viewpunch_vel * dt;
-        pl.viewpunch = decay_punch(pl.viewpunch, dt, 18.0); 
+        pl.viewpunch = decay_punch(pl.viewpunch, dt, 20.0); 
         pl.viewpunch_vel = decay_punch(pl.viewpunch_vel, dt, 35.0); 
         
         if input.reset {
@@ -172,7 +172,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                 if pl.flags.contains(PLAYER_ONGROUND) {
                     let jspeed = game.movesettings.jumpspeed;
 
-                    pl.viewpunch_vel.x += 3.0;
+                    pl.viewpunch_vel.x += 2.8;
 
                     pl.vel.y = -jspeed; 
                 }
@@ -251,7 +251,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                 pl.flags.insert(PLAYER_ONGROUND);
                 pl.landtime = game.time; 
                 if pl.vel.y >= 0.0 { 
-                    pl.viewpunch_vel.x -= 3.0; 
+                    pl.viewpunch_vel.x -= 2.8; 
                 }
             }
         } else {
