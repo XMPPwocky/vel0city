@@ -55,7 +55,7 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
 
             let mut bad = false;
             for i in 0..numcontacts {
-                clip_velocity(&mut v, &contacts[i], 1.0); 
+                clip_velocity(&mut v, &contacts[i], 1.01); 
                 bad = false;
                 for j in (0..numcontacts).filter(|&j| j != i) {
                     if na::dot(&contacts[j], &v) < 0.0 {
@@ -80,7 +80,7 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
                     v = na::zero();
                 }
             }
-            if na::dot(&v, &pl.vel) <= 0.0 {
+            if na::dot(&v, &pl.vel) < 0.0 {
                 v = na::zero(); 
             }
         } else {
@@ -241,13 +241,13 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             &na::Rot3::new(na::Vec3::new(0.0, input.eyeang.y, 0.0)),
             &input.wishvel);
 
-        if let Some(ground_normal) = ground_normal {
-            clip_velocity(&mut wishvel, &ground_normal, 1.0); 
-        }
-        wishvel.y = 0.0;
 
         let wishspeed = na::clamp(na::norm(&wishvel), 0.0, speedcap);
         if !na::approx_eq(&wishspeed, &0.0) { 
+            if let Some(ground_normal) = ground_normal {
+                clip_velocity(&mut wishvel, &ground_normal, 1.0); 
+            }
+            wishvel.y = 0.0;
 
             let movedir = na::normalize(&wishvel);
 
@@ -306,8 +306,8 @@ fn clip_middle(n: f32, eps: f32) -> f32 {
 fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>, bounce: f32) {
     let d = na::dot(vel, norm);
     *vel = *vel - (*norm * d * bounce); 
-    vel.x = clip_middle(vel.x, 0.1);
-    vel.y = clip_middle(vel.y, 0.1);
-    vel.z = clip_middle(vel.z, 0.1);
+    vel.x = clip_middle(vel.x, 0.001);
+    vel.y = clip_middle(vel.y, 0.001);
+    vel.z = clip_middle(vel.z, 0.001);
 }
 
