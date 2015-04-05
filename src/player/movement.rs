@@ -184,11 +184,6 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         } else {
             pl.flags.remove(PLAYER_ONGROUND);
         }
-        let accel = if pl.flags.contains(PLAYER_ONGROUND) && game.time > (pl.landtime + game.movesettings.slidetime) {
-            game.movesettings.accel
-        } else {
-            game.movesettings.airaccel
-        };
 
         if input.jump { 
             if !pl.flags.contains(PLAYER_HOLDING_JUMP) || game.time < (pl.holdjumptime + game.movesettings.slidetime) {
@@ -207,13 +202,18 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.flags.remove(PLAYER_HOLDING_JUMP);
         }
 
+        let accel = if pl.flags.contains(PLAYER_ONGROUND) && game.time > (pl.landtime + game.movesettings.slidetime) {
+            game.movesettings.accel
+        } else {
+            game.movesettings.airaccel
+        };
         let friction = if pl.flags.contains(PLAYER_ONGROUND) && game.time > (pl.landtime + game.movesettings.slidetime) { 
             game.movesettings.friction 
         } else {
             0.0
         };
 
-        let speedcap = if pl.flags.contains(PLAYER_ONGROUND) { 
+        let speedcap = if pl.flags.contains(PLAYER_ONGROUND) && game.time > (pl.landtime + game.movesettings.slidetime) { 
             game.movesettings.movespeed
         } else {
             game.movesettings.airspeed

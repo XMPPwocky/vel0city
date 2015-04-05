@@ -39,7 +39,7 @@ impl Client {
 
         fn id(context: &hud::Context) -> Option<na::Mat4<f32>> {
             let ang = std::f32::consts::PI - (context.player_vel.x.atan2(context.player_vel.z) - context.eyeang.y);
-            let scale = na::norm(&na::Vec2::new(context.player_vel.x, context.player_vel.z)) / 1200.0;
+            let scale = na::norm(&na::Vec2::new(context.player_vel.x, context.player_vel.z)) / 1500.0;
             if scale > 0.03 {
                 let scalemat = na::Mat4::from_diag(&na::Vec4::new(0.15, scale, 1.0, 1.0));
                 let rotmat = na::Rot3::new(na::Vec3::new(0.0, 0.0, ang)).to_homogeneous();
@@ -200,7 +200,7 @@ fn main() {
         pass_data.get_framebuffer_for_prepass(&display).clear_depth(1.0);
         if let Some(ref mut scene) = client.scene {
             scene.lights[0].position = game.players[0].pos.to_vec() + na::Vec3::new(0.0, vel0city::player::PLAYER_HALFEXTENTS.y * 0.1, 0.0);
-            scene.lights[0].intensity = na::clamp(na::norm(&na::Vec2::new(pv.x, pv.z)) / 2.0, 10.0, 60.0);
+            scene.lights[0].intensity = na::clamp(na::norm(&na::Vec2::new(pv.x, pv.z)) / 5.0, 2.0, 50.0);
 
 
             vel0city::graphics::draw_scene(&mut pass_data.get_framebuffer_for_prepass(&display),
