@@ -55,7 +55,7 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
 
             let mut bad = false;
             for i in 0..numcontacts {
-                clip_velocity(&mut v, &contacts[i], 1.01); 
+                clip_velocity(&mut v, &contacts[i], 1.0); 
                 bad = false;
                 for j in (0..numcontacts).filter(|&j| j != i) {
                     if na::dot(&contacts[j], &v) < 0.0 {
@@ -156,7 +156,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.vel.y += game.movesettings.gravity * dt;
         }
 
-        let stepsize = 2.0;
+        let stepsize = 2.8;
 
         let downray = bsp::cast::Ray {
             orig: pl.pos,
@@ -167,7 +167,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         let cast = game.map.bsp.cast_ray(&downray);
 
         let ground_normal = if let Some(bsp::cast::CastResult { norm, toi, ..}) = cast {
-            if toi <= 0.1 && norm.y < -0.9 {
+            if toi <= 0.1 && norm.y < -0.7 {
                 Some(norm) 
             } else {
                 None
@@ -237,17 +237,22 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         }
 
         let curvel = na::Vec3::new(pl.vel.x, pl.vel.y, pl.vel.z);
-        let wishvel = na::rotate(
+        let mut wishvel = na::rotate(
             &na::Rot3::new(na::Vec3::new(0.0, input.eyeang.y, 0.0)),
             &input.wishvel);
 
+        if let Some(ground_normal) = ground_normal {
+            clip_velocity(&mut wishvel, &ground_normal, 1.0); 
+        }
+        wishvel.y = 0.0;
+
         let wishspeed = na::clamp(na::norm(&wishvel), 0.0, speedcap);
         if !na::approx_eq(&wishspeed, &0.0) { 
+
             let movedir = na::normalize(&wishvel);
 
             let curspeed = na::dot(&curvel, &movedir); 
-            // movespeed, not speedcap, or airaccel is way too low
-            let maxdelta = accel * game.movesettings.movespeed * dt;
+            let maxdelta = accel * wishspeed * dt;
             let addspeed = na::clamp((wishspeed - curspeed), 0.0, maxdelta);
             pl.vel = pl.vel + (movedir * addspeed);
         }
@@ -280,7 +285,10 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             if landnorm.y > -0.7 {
                 stepped = false;
             }
+        } else {
+            stepped = false;
         }
+
         if !stepped {
             pl.pos = downpos;
             pl.vel = downvel;
