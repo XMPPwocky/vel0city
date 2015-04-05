@@ -9,7 +9,7 @@ pub mod wavefront;
 pub mod hud;
 pub mod passes;
 
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub struct Vertex {
     pub position: [f32; 3], 
     pub texcoords: [f32; 2] 
@@ -84,7 +84,7 @@ fn draw_map<S: glium::Surface>(surface: &mut S, map: &GraphicsMap, view: &View) 
     }
 }
 
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub struct QuadVertex {
     position: [f32; 2]
 }

@@ -23,11 +23,9 @@ git = "https://github.com/tomaka/glium"
 version = "*"
 
 [dependencies]
-rustc-serialize = "*"
 clock_ticks = "*"
 byteorder = "*"
 bitflags = "*"
 glutin = "*"
-log = "*"
-env_logger = "*"
 nalgebra = "*"
+rustc-serialize = "*"

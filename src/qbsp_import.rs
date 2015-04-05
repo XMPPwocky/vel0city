@@ -16,8 +16,8 @@ use map::{
 pub enum BspError {
     ByteOrderError(byteorder::Error)
 }
-impl ::std::error::FromError<byteorder::Error> for BspError {
-    fn from_error(e: byteorder::Error) -> BspError {
+impl ::std::convert::From<byteorder::Error> for BspError {
+    fn from(e: byteorder::Error) -> BspError {
         BspError::ByteOrderError(e)
     }
 }
@@ -67,7 +67,6 @@ pub fn import_graphics_model(data: &[u8], display: &glium::Display) -> Result<Gr
 
 
     let loaded_textures = textures.iter().map(|tex| {
-        debug!("Loading {:?}", tex.name);
         let contents = assets::load_bin_asset(&(tex.name.clone() + ".png")).unwrap_or_else(|_| assets::load_bin_asset("textures/radiant/notex.png").unwrap());
         let image = image::load(::std::io::Cursor::new(contents), image::PNG).unwrap();
         let texture = glium::Texture2d::new(display, image);

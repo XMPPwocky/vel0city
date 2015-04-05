@@ -7,12 +7,11 @@ extern crate byteorder;
 extern crate glium;
 extern crate glutin;
 extern crate image;
-extern crate rustc_serialize; 
 #[macro_use]
 extern crate bitflags;
 extern crate wavefront_obj;
 #[macro_use]
-extern crate log;
+extern crate rustc_serialize;
 
 pub mod assets;
 pub mod bsp;

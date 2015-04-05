@@ -17,7 +17,7 @@ fn signcpy(n: f32, from: f32) -> f32 {
     }
 }
 
-#[derive(Copy, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum PlaneTestResult {
     Front,
     Back,
@@ -70,7 +70,6 @@ impl Brush {
         let mut norm = na::zero();
         for side in &self.sides {
             if !(side.contents & 1 == 1) {
-                debug!("Skipping non-solid brush side... contents {}", side.contents);
                 continue;
             }
 

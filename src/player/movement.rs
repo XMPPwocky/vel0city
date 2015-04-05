@@ -44,7 +44,7 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
             if toi > 0.0 {
                 numcontacts = 1;
                 pl.pos = pl.pos + (v * toi * dt); 
-                dt = dt * (1.0 - toi);
+                dt -= dt * toi;
                 if toi >= 1.0 {
                     break;
                 }
@@ -52,14 +52,10 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
                 numcontacts += 1;
             }
             contacts[numcontacts - 1] = norm;
-            if norm.y > -0.7 {
-                pl.flags.insert(PLAYER_CAN_STEP);
-            }
-
 
             let mut bad = false;
             for i in 0..numcontacts {
-                clip_velocity(&mut v, &contacts[i]); 
+                clip_velocity(&mut v, &contacts[i], 1.01); 
                 bad = false;
                 for j in (0..numcontacts).filter(|&j| j != i) {
                     if na::dot(&contacts[j], &v) < 0.0 {
@@ -73,7 +69,7 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
             }
             if bad {
                 if numcontacts == 1 {
-                    warn!("Clip failed with 1 contact?")
+                    println!("Clip failed with one contact? impossible!");
                 } else if numcontacts == 2 {
                     let movedir = na::normalize(&v);
                     let crease = na::cross(&contacts[0], &contacts[1]);
@@ -84,7 +80,7 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
                     v = na::zero();
                 }
             }
-            if na::dot(&v, &pl.vel) < 0.0 {
+            if na::dot(&v, &pl.vel) <= 0.0 {
                 v = na::zero(); 
             }
         } else {
@@ -95,16 +91,16 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
     pl.vel = v;
 }
 
-fn how_far(map: &Map, pl: &Player, movement: na::Vec3<f32>) -> (na::Vec3<f32>, na::Vec3<f32>) {
+fn how_far(map: &Map, pl: &Player, movement: na::Vec3<f32>) -> (na::Vec3<f32>, Option<na::Vec3<f32>>) {
     let trace = map.bsp.cast_ray(&bsp::cast::Ray {
         orig: pl.pos,
         dir: movement,
         halfextents: pl.halfextents
     });
     if let Some(trace) = trace {
-        (pl.pos.to_vec() + (movement * trace.toi), na::zero())
+        (pl.pos.to_vec() + (movement * trace.toi), Some(trace.norm)) 
     } else {
-        (pl.pos.to_vec() + movement, na::zero())
+        (pl.pos.to_vec() + movement, None) 
     }
 }
 fn horiz_speed(vel: &na::Vec3<f32>) -> f32 {
@@ -145,8 +141,8 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
     {
         let pl = &mut game.players[playeridx as usize];
         pl.viewpunch = pl.viewpunch + pl.viewpunch_vel * dt;
-        pl.viewpunch = decay_punch(pl.viewpunch, dt, 20.0); 
-        pl.viewpunch_vel = decay_punch(pl.viewpunch_vel, dt, 35.0); 
+        pl.viewpunch = decay_punch(pl.viewpunch, dt, 10.0); 
+        pl.viewpunch_vel = decay_punch(pl.viewpunch_vel, dt, 28.0); 
         
         if input.reset {
             pl.pos = na::Pnt3::new(0.0, -10.0, 0.0);
@@ -156,6 +152,38 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
 
         pl.eyeang = input.eyeang;
 
+        if !pl.flags.contains(PLAYER_ONGROUND) {
+            pl.vel.y += game.movesettings.gravity * dt;
+        }
+
+        let stepsize = 2.0;
+
+        let downray = bsp::cast::Ray {
+            orig: pl.pos,
+            dir: na::Vec3::new(0.0, 0.1, 0.0),
+            halfextents: pl.halfextents
+        };
+
+        let cast = game.map.bsp.cast_ray(&downray);
+
+        let ground_normal = if let Some(bsp::cast::CastResult { norm, toi, ..}) = cast {
+            if toi <= 0.1 && norm.y < -0.9 {
+                Some(norm) 
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        if ground_normal.is_some() {
+            if !pl.flags.contains(PLAYER_ONGROUND) {
+                pl.flags.insert(PLAYER_ONGROUND);
+                pl.landtime = game.time; 
+            }
+        } else {
+            pl.flags.remove(PLAYER_ONGROUND);
+        }
         let accel = if pl.flags.contains(PLAYER_ONGROUND) && game.time > (pl.landtime + game.movesettings.slidetime) {
             game.movesettings.accel
         } else {
@@ -167,14 +195,11 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                 if !pl.flags.contains(PLAYER_HOLDING_JUMP) {
                     pl.holdjumptime = game.time;
                 }
-
-
                 if pl.flags.contains(PLAYER_ONGROUND) {
+                    pl.flags.remove(PLAYER_ONGROUND);
                     let jspeed = game.movesettings.jumpspeed;
 
-                    pl.viewpunch_vel.x += 2.8;
-
-                    pl.vel.y = -jspeed; 
+                    pl.vel.y = -jspeed;
                 }
                 pl.flags.insert(PLAYER_HOLDING_JUMP);
             }
@@ -182,13 +207,13 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.flags.remove(PLAYER_HOLDING_JUMP);
         }
 
-        let friction = if pl.flags.contains(PLAYER_ONGROUND) && game.time > (pl.landtime + game.movesettings.slidetime) {
+        let friction = if pl.flags.contains(PLAYER_ONGROUND) && game.time > (pl.landtime + game.movesettings.slidetime) { 
             game.movesettings.friction 
         } else {
             0.0
         };
 
-        let speedcap = if pl.flags.contains(PLAYER_ONGROUND) {
+        let speedcap = if pl.flags.contains(PLAYER_ONGROUND) { 
             game.movesettings.movespeed
         } else {
             game.movesettings.airspeed
@@ -227,52 +252,9 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.vel = pl.vel + (movedir * addspeed);
         }
 
-        let stepsize = 2.5;
-
-        let downray = bsp::cast::Ray {
-            orig: pl.pos,
-            dir: na::Vec3::new(0.0, stepsize, 0.0),
-            halfextents: pl.halfextents
-        };
-
-        let cast = game.map.bsp.cast_ray(&downray);
-
-        let hit_floor = if let Some(bsp::cast::CastResult { norm, toi, ..}) = cast {
-            if toi <= 0.0 && norm.y < -0.7 {
-                true
-            } else {
-                false
-            }
-        } else {
-            false
-        };
-        if hit_floor {
-            if !pl.flags.contains(PLAYER_ONGROUND) {
-                pl.flags.insert(PLAYER_ONGROUND);
-                pl.landtime = game.time; 
-                if pl.vel.y >= 0.0 { 
-                    pl.viewpunch_vel.x -= 2.8; 
-                }
-            }
-        } else {
-            pl.flags.remove(PLAYER_ONGROUND);
-            pl.vel.y += game.movesettings.gravity * dt;
-            // clamp velocity again after gravity
-            let speed = na::norm(&pl.vel);
-            if !na::approx_eq(&speed, &0.0) {
-                let dir = na::normalize(&pl.vel);
-                let newspeed = na::clamp(speed, 0.0, game.movesettings.maxspeed); 
-
-                pl.vel = dir * newspeed;
-            }
-        }
-
         let startpos = pl.pos;
         let startvel = pl.vel;
         simple_move(&game.map, pl, dt);
-        if !pl.flags.contains(PLAYER_CAN_STEP) {
-            return;
-        }
 
         let downpos = pl.pos;
         let downvel = pl.vel;
@@ -283,19 +265,29 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         pl.pos = upstart.to_pnt();
         simple_move(&game.map, pl, dt);
 
-        let (downstart, _) = how_far(&game.map, pl, na::Vec3::new(0.0, stepsize , 0.0));
+        let (downstart, landnorm) = how_far(&game.map, pl, na::Vec3::new(0.0, stepsize , 0.0));
         pl.pos = downstart.to_pnt(); 
 
         let updist = horiz_speed(&(pl.pos.to_vec() - startpos.to_vec()));
         let downdist = horiz_speed(&(downpos.to_vec() - startpos.to_vec()));
+        pl.vel.y = downvel.y;
+        let mut stepped = true;
         if downdist > updist { 
+            stepped = false;
+        } 
+
+        if let Some(landnorm) = landnorm {
+            if landnorm.y > -0.7 {
+                stepped = false;
+            }
+        }
+        if !stepped {
             pl.pos = downpos;
             pl.vel = downvel;
         }
-        pl.vel.y = downvel.y;
     }
 }
-
+    
 fn clip_middle(n: f32, eps: f32) -> f32 { 
     if na::abs(&n) < eps {
         0.0
@@ -303,11 +295,11 @@ fn clip_middle(n: f32, eps: f32) -> f32 {
         n
     }
 }
-fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>) {
+fn clip_velocity(vel: &mut na::Vec3<f32>, norm: &na::Vec3<f32>, bounce: f32) {
     let d = na::dot(vel, norm);
-    *vel = *vel - (*norm * d * 1.01);
-    vel.x = clip_middle(vel.x, 0.5);
-    vel.y = clip_middle(vel.y, 0.5);
-    vel.z = clip_middle(vel.z, 0.5);
+    *vel = *vel - (*norm * d * bounce); 
+    vel.x = clip_middle(vel.x, 0.1);
+    vel.y = clip_middle(vel.y, 0.1);
+    vel.z = clip_middle(vel.z, 0.1);
 }
 

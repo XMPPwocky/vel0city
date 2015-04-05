@@ -19,7 +19,7 @@ pub struct MapFace {
     pub index_count: u32,
 }
 
-#[derive(Copy, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct MapVertex {
     pub position: [f32; 3],
     pub texcoords: [f32; 2],

@@ -1,14 +1,9 @@
-#![feature(core)]
-
 extern crate glium;
 extern crate glutin;
 extern crate vel0city;
 extern crate wavefront_obj;
 extern crate nalgebra as na;
 extern crate clock_ticks;
-#[macro_use]
-extern crate log;
-extern crate env_logger;
 extern crate image;
 
 use std::borrow::ToOwned;
@@ -25,7 +20,6 @@ use na::{
 };
 use std::f32::consts::{
     PI,
-    PI_2, 
 };
 
 pub struct Client {
@@ -72,8 +66,6 @@ impl Client {
 
 #[cfg(not(test))]
 fn main() {
-    env_logger::init().unwrap();
-
     let display = glutin::WindowBuilder::new()
         // .with_vsync()
         .with_title("vel0city".to_owned())
@@ -161,7 +153,7 @@ fn main() {
         accumtime += frametime;
         smoothtime = (smoothtime + frametime) / 2.0;
         lasttime = curtime;
-        println!("frametime: {}us", smoothtime * 1000.0 * 1000.0);
+        //println!("frametime: {}us", smoothtime * 1000.0 * 1000.0);
 
         let win = display.get_window().unwrap();
         for ev in win.poll_events() {
@@ -197,7 +189,7 @@ fn main() {
             );
 
         let l = na::Iso3::new_with_rotmat(na::zero(), rot.to_rot()).inv().unwrap().to_homogeneous();
-        let v = na::Iso3::new((game.players[0].pos.to_vec() + na::Vec3 { y: vel0city::player::PLAYER_HALFEXTENTS.y * -1.0, ..na::zero() }) * -1.0, na::zero()).to_homogeneous();
+        let v = na::Iso3::new((game.players[0].pos.to_vec() + na::Vec3 { y: vel0city::player::PLAYER_HALFEXTENTS.y * -0.6, ..na::zero() }) * -1.0, na::zero()).to_homogeneous();
         //l.inv();
         let view = vel0city::graphics::View {
             cam: l * v,
