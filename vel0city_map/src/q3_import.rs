@@ -8,6 +8,8 @@ use glium;
 use image;
 use na;
 use { 
+    Map,
+    Model,
     GraphicsMap,
     MapVertex,
     MapFace
@@ -34,7 +36,7 @@ pub fn import_entities(data: &[u8]) -> Result<String, BspError> {
     Ok(try!(std::str::from_utf8(directory.entities)).to_owned())
 }
 
-pub fn import_collision(data: &[u8]) -> Result<bsp::Tree, BspError> {
+pub fn import(data: &[u8]) -> Result<Map, BspError> {
     let directory = try!(read_directory(data));
     let planes = try!(read_planes(directory.planes));
     let nodes = try!(read_nodes(directory.nodes, &planes));
@@ -43,12 +45,17 @@ pub fn import_collision(data: &[u8]) -> Result<bsp::Tree, BspError> {
     let brushsides = try!(read_brushsides(directory.brushsides, &planes, &textures));
     let brushes = try!(read_brushes(directory.brushes, &brushsides));
     let leafbrushes = try!(read_leafbrushes(directory.leafbrushes));
+    let models = try!(read_models(directory.models));
 
-    Ok(bsp::Tree {
-        brushes: brushes,
-        leafbrushes: leafbrushes, 
-        leaves: leaves,
-        inodes: nodes,
+    Ok(Map {
+        bsp: bsp::Tree {
+            brushes: brushes,
+            leafbrushes: leafbrushes, 
+            leaves: leaves,
+            inodes: nodes,
+        },
+        models: models, 
+        entities: vec![::Entity { model: 1 }]
     })
 }
 
@@ -121,6 +128,7 @@ struct Directory<'a> {
     nodes: &'a [u8],
     leaves: &'a [u8],
     leafbrushes: &'a [u8],
+    models: &'a [u8],
     brushes: &'a [u8],
     brushsides: &'a [u8],
     vertices: &'a [u8],
@@ -156,7 +164,11 @@ fn read_directory(data: &[u8]) -> byteorder::Result<Directory> {
     let leafbrushes_offset = try!(cursor.read_u32::<LittleEndian>());
     let leafbrushes_len = try!(cursor.read_u32::<LittleEndian>());
 
-    cursor.seek(SeekFrom::Current(8*1)).unwrap();
+    cursor.seek(SeekFrom::Current(0)).unwrap();
+    let models_offset = try!(cursor.read_u32::<LittleEndian>());
+    let models_len = try!(cursor.read_u32::<LittleEndian>());
+
+    cursor.seek(SeekFrom::Current(0)).unwrap();
     let brushes_offset = try!(cursor.read_u32::<LittleEndian>());
     let brushes_len = try!(cursor.read_u32::<LittleEndian>());
 
@@ -187,6 +199,7 @@ fn read_directory(data: &[u8]) -> byteorder::Result<Directory> {
         nodes: &data[nodes_offset as usize .. (nodes_offset + nodes_len) as usize], 
         leaves: &data[leaves_offset as usize .. (leaves_offset + leaves_len) as usize],
         leafbrushes: &data[leafbrushes_offset as usize .. (leafbrushes_offset + leafbrushes_len) as usize],
+        models: &data[models_offset as usize .. (models_offset + models_len) as usize],
         brushes: &data[brushes_offset as usize .. (brushes_offset + brushes_len) as usize],
         brushsides: &data[brushsides_offset as usize .. (brushsides_offset + brushsides_len) as usize],
         vertices: &data[vertices_offset as usize .. (vertices_offset + vertices_len) as usize], 
@@ -303,18 +316,6 @@ fn read_meshverts(data: &[u8]) -> byteorder::Result<Vec<u32>> {
             cursor.read_u32::<LittleEndian>()
         })
         .collect()
-}
-
-struct Model {
-    face: i32,
-    n_faces: i32,
-}
-
-fn read_model(data: &[u8]) -> byteorder::Result<Model> {
-    let mut cursor = Cursor::new(data);
-    cursor.seek(SeekFrom::Start(28)).unwrap();
-    unimplemented!();
-    
 }
 
 #[derive(Debug)]
@@ -435,5 +436,22 @@ fn read_vertex(data: &[u8]) -> byteorder::Result<Vertex> {
 fn read_vertices(data: &[u8]) -> byteorder::Result<Vec<Vertex>> {
     data.chunks(44)
         .map(|chunk| read_vertex(chunk))
+        .collect()
+}
+
+fn read_model(data: &[u8]) -> byteorder::Result<Model> {
+    let mut cursor = Cursor::new(data);
+    cursor.seek(SeekFrom::Start(32)).unwrap();
+
+    let brush = try!(cursor.read_u32::<LittleEndian>()); 
+    let n_brushes = try!(cursor.read_u32::<LittleEndian>()); 
+    Ok(Model {
+        brush: brush,
+        n_brushes: n_brushes
+    })
+}
+fn read_models(data: &[u8]) -> byteorder::Result<Vec<Model>> {
+    data.chunks(40)
+        .map(|chunk| read_model(chunk))
         .collect()
 }

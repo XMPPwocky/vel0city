@@ -91,9 +91,7 @@ fn main() {
             landtime: 0.0,
             holdjumptime: 0.0,
         }],
-        map: vel0city::map::Map {
-            bsp: vel0city::map::q3_import::import_collision(&asset).unwrap()
-        },
+        map: vel0city::map::q3_import::import(&asset).unwrap(),
         timescale: 1.0,
         time: 0.0,
     };

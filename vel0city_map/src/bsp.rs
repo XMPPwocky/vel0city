@@ -1,9 +1,10 @@
 #![allow(dead_code, unused_variables)]
 
 use na;
-use self::cast::{
+use cast::{
     Ray,
-    CastResult
+    CastResult,
+    combine_results,
 };
 
 
@@ -105,7 +106,8 @@ impl Brush {
         if sf > -1.0 && sf <= ef && sf >= start && sf <= end {
             return Some(CastResult {
                 toi: sf,
-                norm: norm
+                norm: norm,
+                entity: None, 
             });
         }
         None
@@ -117,23 +119,6 @@ pub struct BrushSide {
     pub plane: Plane,
     pub flags: i32,
     pub contents: i32,
-}
-
-fn combine_results(a: Option<CastResult>, b: Option<CastResult>) -> Option<CastResult> {
-    if let Some(a) = a {
-        match b {
-            Some(b) => {
-                if a.toi <= b.toi {
-                    Some(a)
-                } else {
-                    Some(b)
-                }
-            },
-            None => Some(a)
-        }
-    } else {
-        b
-    }
 }
 
 #[derive(Debug)]
@@ -233,24 +218,6 @@ impl Tree {
     }
 }
 
-pub mod cast {
-    use na;
-
-    /// Secretly not a ray, it can have thickness to it.
-    pub struct Ray {
-        pub orig: na::Pnt3<f32>,
-        pub dir: na::Vec3<f32>,
-        pub halfextents: na::Vec3<f32>,
-    }
-
-    #[derive(Copy, Clone,Debug, PartialEq)]
-    pub struct CastResult {
-        /// Time of impact.
-        pub toi: f32,
-        /// Normal of the plane it hit. 
-        pub norm: na::Vec3<f32>,
-    }
-}
 
 #[cfg(test)]
 pub mod test {

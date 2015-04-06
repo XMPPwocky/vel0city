@@ -10,6 +10,7 @@ bitflags! {
         const PLAYER_ONGROUND = 0b00_00_00_01,
         const PLAYER_HOLDING_JUMP = 0b00_00_00_10,
         const PLAYER_CAN_STEP = 0b00_00_01_00,
+        const PLAYER_MUST_DIE = 0b00_00_10_00,
     }
 }
 

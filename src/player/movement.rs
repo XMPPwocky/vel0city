@@ -1,5 +1,7 @@
-use map::bsp;
-use map::bsp::cast::CastResult;
+use map::cast::{
+    Ray,
+    CastResult
+};
 use map::Map;
 use player::{
     Player,
@@ -7,6 +9,7 @@ use player::{
     PLAYER_ONGROUND,
     PLAYER_HOLDING_JUMP,
     PLAYER_CAN_STEP,
+    PLAYER_MUST_DIE,
 };
 use na;
 use Game;
@@ -32,15 +35,19 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
             break;
         }
 
-        let moveray = bsp::cast::Ray {
+        let moveray = Ray {
             orig: pl.pos,
             dir: v * dt,
             halfextents: pl.halfextents
         };
 
-        let cast = map.bsp.cast_ray(&moveray);
+        let cast = map.cast_ray(&moveray);
 
-        if let Some(bsp::cast::CastResult { toi, norm}) = cast {
+        if let Some(CastResult { toi, norm, entity, .. }) = cast {
+            if let Some(_) = entity {
+                pl.flags.insert(PLAYER_MUST_DIE);
+            }
+
             if toi > 0.0 {
                 numcontacts = 1;
                 pl.pos = pl.pos + (v * toi * dt); 
@@ -92,7 +99,7 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
 }
 
 fn how_far(map: &Map, pl: &Player, movement: na::Vec3<f32>) -> (na::Vec3<f32>, Option<na::Vec3<f32>>) {
-    let trace = map.bsp.cast_ray(&bsp::cast::Ray {
+    let trace = map.cast_ray(&Ray {
         orig: pl.pos,
         dir: movement,
         halfextents: pl.halfextents
@@ -141,9 +148,9 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         pl.viewpunch = pl.viewpunch + pl.viewpunch_vel * dt;
         pl.viewpunch = decay_punch(pl.viewpunch, dt, 10.0); 
         pl.viewpunch_vel = decay_punch(pl.viewpunch_vel, dt, 28.0); 
-        
-        if input.reset {
-            pl.pos = na::Pnt3::new(0.0, -10.0, 0.0);
+
+        if pl.flags.contains(PLAYER_MUST_DIE) || input.reset {
+            pl.pos = na::Pnt3::new(0.0, 0.0, 0.0);
             pl.vel = na::zero();
             pl.flags = PlayerFlags::empty(); 
         };
@@ -156,15 +163,15 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
 
         let stepsize = 2.8;
 
-        let downray = bsp::cast::Ray {
+        let downray = Ray {
             orig: pl.pos,
             dir: na::Vec3::new(0.0, 0.1, 0.0),
             halfextents: pl.halfextents
         };
 
-        let cast = game.map.bsp.cast_ray(&downray);
+        let cast = game.map.cast_ray(&downray);
 
-        let ground_normal = if let Some(bsp::cast::CastResult { norm, ..}) = cast {
+        let ground_normal = if let Some(CastResult { norm, ..}) = cast {
             if norm.y < -0.7 {
                 Some(norm) 
             } else {
