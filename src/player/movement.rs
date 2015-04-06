@@ -1,5 +1,5 @@
-use bsp;
-use bsp::cast::CastResult;
+use map::bsp;
+use map::bsp::cast::CastResult;
 use map::Map;
 use player::{
     Player,

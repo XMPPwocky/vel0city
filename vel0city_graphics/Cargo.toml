@@ -1,0 +1,16 @@
+[package]
+name = "vel0city_graphics"
+version = "0.0.1"
+authors = ["Nathaniel Theis <nttheis@gmail.com>"]
+
+[dependencies.wavefront_obj]
+git = "https://github.com/PistonDevelopers/wavefront_obj"
+
+[dependencies]
+glium = "*"
+nalgebra = "*"
+
+[dependencies.vel0city_base]
+path = "../vel0city_base"
+[dependencies.vel0city_map]
+path = "../vel0city_map"

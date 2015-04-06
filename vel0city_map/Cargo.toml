@@ -1,0 +1,13 @@
+[package]
+name = "vel0city_map"
+version = "0.0.1"
+authors = ["Nathaniel Theis <nttheis@gmail.com>"]
+
+[dependencies]
+glium = "*"
+byteorder = "*"
+nalgebra = "*"
+image = "*"
+
+[dependencies.vel0city_base]
+path = "../vel0city_base"

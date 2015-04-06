@@ -9,19 +9,6 @@ debug = true
 rpath = false
 lto = false 
 
-[dependencies.wavefront_obj]
-git = "https://github.com/PistonDevelopers/wavefront_obj"
-
-[dependencies.glium]
-git = "https://github.com/tomaka/glium"
-features = ["nalgebra", "image", "headless"]
-
-[dependencies.glium_macros]
-git = "https://github.com/tomaka/glium"
-
-[dependencies.image]
-version = "*"
-
 [dependencies]
 clock_ticks = "*"
 byteorder = "*"
@@ -29,3 +16,14 @@ bitflags = "*"
 glutin = "*"
 nalgebra = "*"
 rustc-serialize = "*"
+glium = "*"
+image = "*"
+
+[dependencies.vel0city_map]
+path = "vel0city_map"
+
+[dependencies.vel0city_base]
+path = "vel0city_base"
+
+[dependencies.vel0city_graphics]
+path = "vel0city_graphics"

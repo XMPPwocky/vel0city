@@ -1,7 +1,5 @@
 use na;
-use glutin::{
-    self,
-};
+use glutin;
 use settings::InputSettings;
 use player::movement::MoveInput;
 use std::f32::consts::{

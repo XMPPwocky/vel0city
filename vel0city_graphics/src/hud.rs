@@ -1,6 +1,6 @@
-use assets;
+use vel0city_base::assets;
 use glium;
-use graphics::QuadVertex;
+use QuadVertex;
 use na;
 use na::{
     ToHomogeneous

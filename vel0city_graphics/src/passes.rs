@@ -1,8 +1,8 @@
-use graphics::QuadVertex;
-use graphics::Light;
+use QuadVertex;
+use Light;
 use glium;
 use glium::Surface;
-use graphics::View;
+use View;
 use na;
 
 pub struct Technique {

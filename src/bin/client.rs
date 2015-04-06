@@ -1,7 +1,6 @@
 extern crate glium;
 extern crate glutin;
 extern crate vel0city;
-extern crate wavefront_obj;
 extern crate nalgebra as na;
 extern crate clock_ticks;
 extern crate image;
@@ -77,6 +76,7 @@ fn main() {
 
     let proj = na::Persp3::new(x as f32 / y as f32, 90.0, 1.5, 4096.0).to_mat();
 
+    let asset = assets::load_bin_asset("maps/test.bsp").unwrap();
     let mut game = vel0city::Game {
         movesettings: std::default::Default::default(),
         players: vec![vel0city::player::Player {
@@ -91,14 +91,15 @@ fn main() {
             landtime: 0.0,
             holdjumptime: 0.0,
         }],
-        map: vel0city::map::single_plane_map(),
+        map: vel0city::map::Map {
+            bsp: vel0city::map::q3_import::import_collision(&asset).unwrap()
+        },
         timescale: 1.0,
         time: 0.0,
     };
 
-    let asset = assets::load_bin_asset("maps/test.bsp").unwrap();
-    let mapmodel = vel0city::qbsp_import::import_graphics_model(&asset, &display).unwrap();
-    let ents = vel0city::qbsp_import::import_entities(&asset).unwrap();
+    let mapmodel = vel0city::map::q3_import::import_graphics_model(&asset, &display).unwrap();
+    let ents = vel0city::map::q3_import::import_entities(&asset).unwrap();
     println!("{}", ents);
     client.scene = Some(vel0city::graphics::Scene {
         map: mapmodel,

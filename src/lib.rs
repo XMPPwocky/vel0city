@@ -9,19 +9,21 @@ extern crate glutin;
 extern crate image;
 #[macro_use]
 extern crate bitflags;
-extern crate wavefront_obj;
 #[macro_use]
 extern crate rustc_serialize;
 
-pub mod assets;
-pub mod bsp;
-pub mod graphics;
+extern crate vel0city_map;
+extern crate vel0city_base;
+extern crate vel0city_graphics;
+
+pub use vel0city_base::assets as assets;
+pub use vel0city_map as map;
+pub use vel0city_graphics as graphics;
+
 pub mod input;
-pub mod map;
 pub mod player;
 pub mod particle;
 pub mod settings;
-pub mod qbsp_import;
 
 pub struct Game {
     pub map: map::Map,
