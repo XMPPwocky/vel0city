@@ -14,7 +14,6 @@ impl ParticleSystem {
     pub fn update(&mut self, curtime: f32, _dt: f32) {
         let dead = curtime - self.lifetime;
 
-        let particles_capacity = self.particles.len();
         for (idx, particle) in self.particles.iter_mut().rev().take(self.particles_count as usize).enumerate() {
             if particle.spawntime < dead {
                 self.particles_count = idx as u32;

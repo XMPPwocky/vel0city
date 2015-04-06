@@ -108,17 +108,15 @@ fn horiz_speed(vel: &na::Vec3<f32>) -> f32 {
 }
 
 fn decay_punch_component(c: f32, dt: f32, scale: f32) -> f32 {
-    use std::num::Float;
-
     if c >= 0.001 {
-        let k = c * 2.0.powf(-1.0 * scale * dt);
+        let k = c * 2.0f32.powf(-1.0 * scale * dt);
         if k > 0.001 {
             k
         } else {
             0.0
         }
     } else if c <= -0.001 {
-        let k = c * 2.0.powf(-1.0 * scale * dt); 
+        let k = c * 2.0f32.powf(-1.0 * scale * dt); 
         if k < -0.001 {
             k
         } else {
@@ -166,7 +164,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
 
         let cast = game.map.bsp.cast_ray(&downray);
 
-        let ground_normal = if let Some(bsp::cast::CastResult { norm, toi, ..}) = cast {
+        let ground_normal = if let Some(bsp::cast::CastResult { norm, ..}) = cast {
             if norm.y < -0.7 {
                 Some(norm) 
             } else {

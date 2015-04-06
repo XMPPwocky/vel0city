@@ -3,6 +3,8 @@ use assets;
 use bsp;
 use byteorder::{self, LittleEndian, ReadBytesExt};
 use std::io::{Cursor, SeekFrom, Seek};
+use std;
+use std::borrow::ToOwned;
 use glium;
 use image;
 use na;
@@ -14,13 +16,24 @@ use map::{
 
 #[derive(Debug)]
 pub enum BspError {
-    ByteOrderError(byteorder::Error)
+    ByteOrderError(byteorder::Error),
+    NotUtf8(std::str::Utf8Error),
 }
-impl ::std::convert::From<byteorder::Error> for BspError {
+impl std::convert::From<byteorder::Error> for BspError {
     fn from(e: byteorder::Error) -> BspError {
         BspError::ByteOrderError(e)
     }
 }
+impl std::convert::From<std::str::Utf8Error> for BspError {
+    fn from(e: std::str::Utf8Error) -> BspError {
+        BspError::NotUtf8(e)
+    }
+}
+pub fn import_entities(data: &[u8]) -> Result<String, BspError> {
+    let directory = try!(read_directory(data));
+    Ok(try!(std::str::from_utf8(directory.entities)).to_owned())
+}
+
 pub fn import_collision(data: &[u8]) -> Result<bsp::Tree, BspError> {
     let directory = try!(read_directory(data));
     let planes = try!(read_planes(directory.planes));
@@ -102,6 +115,7 @@ pub fn import_graphics_model(data: &[u8], display: &glium::Display) -> Result<Gr
 }
 
 struct Directory<'a> {
+    entities: &'a [u8],
     textures: &'a [u8],
     planes: &'a [u8],
     nodes: &'a [u8],
@@ -118,7 +132,11 @@ struct Directory<'a> {
 fn read_directory(data: &[u8]) -> byteorder::Result<Directory> {
     let mut cursor = Cursor::new(data);
 
-    cursor.seek(SeekFrom::Start(8 + 8)).unwrap();
+    cursor.seek(SeekFrom::Start(8)).unwrap();
+    let entities_offset = try!(cursor.read_u32::<LittleEndian>());
+    let entities_len = try!(cursor.read_u32::<LittleEndian>());
+
+    cursor.seek(SeekFrom::Current(0)).unwrap();
     let textures_offset = try!(cursor.read_u32::<LittleEndian>());
     let textures_len = try!(cursor.read_u32::<LittleEndian>());
 
@@ -163,6 +181,7 @@ fn read_directory(data: &[u8]) -> byteorder::Result<Directory> {
     let lightmaps_len = try!(cursor.read_u32::<LittleEndian>());
 
     Ok(Directory {
+        entities: &data[entities_offset as usize .. (entities_offset + entities_len) as usize],
         textures: &data[textures_offset as usize .. (textures_offset + textures_len) as usize],
         planes: &data[planes_offset as usize .. (planes_offset + planes_len) as usize],
         nodes: &data[nodes_offset as usize .. (nodes_offset + nodes_len) as usize], 

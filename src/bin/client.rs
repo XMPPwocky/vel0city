@@ -98,6 +98,8 @@ fn main() {
 
     let asset = assets::load_bin_asset("maps/test.bsp").unwrap();
     let mapmodel = vel0city::qbsp_import::import_graphics_model(&asset, &display).unwrap();
+    let ents = vel0city::qbsp_import::import_entities(&asset).unwrap();
+    println!("{}", ents);
     client.scene = Some(vel0city::graphics::Scene {
         map: mapmodel,
         lights: vec![ vel0city::graphics::Light { position: na::zero(), intensity: 0.0, radius: 0.5, color: na::Vec3::new(0.0, 1.0, 1.0) }] 

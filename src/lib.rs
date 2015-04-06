@@ -1,4 +1,4 @@
-#![feature(core, io)]
+#![feature(core)]
 
 #[macro_use]
 extern crate nalgebra as na;
