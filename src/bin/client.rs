@@ -161,6 +161,8 @@ fn main() {
             match &ev {
                 &glutin::Event::Resized(width, height) => {
                     winsize = (width, height);
+                    if winsize.0 < 2 { winsize.0 = 2; }
+                    if winsize.1 < 2 { winsize.1 = 2; }
                     pass_data = vel0city::graphics::passes::PassData::new(&display, (winsize.0, winsize.1)); 
                     client.input.cursorpos = (winsize.0 as i32 / 2, winsize.1 as i32 / 2);
                 },
