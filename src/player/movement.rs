@@ -2,7 +2,7 @@ use map::cast::{
     Ray,
     CastResult
 };
-use map::Map;
+use map::{EntityKind, Map};
 use player::{
     Player,
     PlayerFlags,
@@ -11,8 +11,12 @@ use player::{
     PLAYER_CAN_STEP,
     PLAYER_MUST_DIE,
 };
-use na;
+use na::{
+    self,
+    Rotation
+};
 use Game;
+use std::f32::consts::PI;
 
 pub struct MoveInput {
     /// The velocity the player "wishes" to have 
@@ -44,8 +48,13 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
         let cast = map.cast_ray(&moveray);
 
         if let Some(CastResult { toi, norm, entity, .. }) = cast {
-            if let Some(_) = entity {
-                pl.flags.insert(PLAYER_MUST_DIE);
+            if let Some(entidx) = entity {
+                if map.entities[entidx as usize].kind == EntityKind::OutOfBounds {
+                    pl.flags.insert(PLAYER_MUST_DIE);
+                }
+                if map.entities[entidx as usize].kind == EntityKind::Goal {
+                    panic!("A WINNER IS YOU!");
+                }
             }
 
             if toi > 0.0 {
@@ -149,16 +158,20 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         pl.viewpunch = decay_punch(pl.viewpunch, dt, 10.0); 
         pl.viewpunch_vel = decay_punch(pl.viewpunch_vel, dt, 28.0); 
 
-        if pl.flags.contains(PLAYER_MUST_DIE) || input.reset {
-            pl.pos = na::Pnt3::new(0.0, 0.0, 0.0);
-            pl.vel = na::zero();
-            pl.flags = PlayerFlags::empty(); 
-        };
-
         pl.eyeang = input.eyeang;
 
+        if pl.flags.contains(PLAYER_MUST_DIE) || input.reset {
+            pl.pos = na::Pnt3::new(0.0, 0.0, 0.0);
+            pl.eyeang = na::Vec3::new(0.0, 0.0, 0.0);
+            pl.vel = na::zero();
+            pl.flags = PlayerFlags::empty(); 
+            // FIXME: need a better way to handle this
+            // without this, you slide when respawning
+            pl.flags.insert(PLAYER_ONGROUND);
+        };
+
         if !pl.flags.contains(PLAYER_ONGROUND) {
-            pl.vel.y += game.movesettings.gravity * dt;
+            pl.vel.y += game.movesettings.gravity * dt * 0.5;
         }
 
         let stepsize = 2.8;
@@ -171,17 +184,17 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
 
         let cast = game.map.cast_ray(&downray);
 
-        let ground_normal = if let Some(CastResult { norm, ..}) = cast {
+        let (ground_normal, hit_floor) = if let Some(CastResult { norm, ..}) = cast {
             if norm.y < -0.7 {
-                Some(norm) 
+                (Some(norm), true) 
             } else {
-                None
+                (Some(norm), false)
             }
         } else {
-            None
+            (None, false)
         };
 
-        if ground_normal.is_some() {
+        if hit_floor {
             if !pl.flags.contains(PLAYER_ONGROUND) {
                 pl.flags.insert(PLAYER_ONGROUND);
                 pl.landtime = game.time; 
@@ -199,7 +212,8 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                     pl.flags.remove(PLAYER_ONGROUND);
                     let jspeed = game.movesettings.jumpspeed;
 
-                    pl.vel.y = -jspeed;
+                    pl.vel.y += -jspeed;
+                    if pl.vel.y > -jspeed { pl.vel.y = -jspeed; }
                 }
                 pl.flags.insert(PLAYER_HOLDING_JUMP);
             }
@@ -241,24 +255,23 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.vel = dir * newspeed;
         }
 
-        let curvel = na::Vec3::new(pl.vel.x, pl.vel.y, pl.vel.z);
+        let rot = na::Rot3::new(na::Vec3::new(0.0, input.eyeang.y, 0.0));
         let mut wishvel = na::rotate(
-            &na::Rot3::new(na::Vec3::new(0.0, input.eyeang.y, 0.0)),
+            &rot,
             &input.wishvel);
+        if let Some(ground_normal) = ground_normal {
+            clip_velocity(&mut wishvel, &ground_normal, 1.0); 
+        }
 
-
-        let wishspeed = na::clamp(na::norm(&wishvel), 0.0, speedcap);
+        let real_wishspeed = na::clamp(na::norm(&wishvel), 0.0, game.movesettings.movespeed);
+        let wishspeed = na::clamp(real_wishspeed, 0.0, speedcap);
         if !na::approx_eq(&wishspeed, &0.0) { 
-            if let Some(ground_normal) = ground_normal {
-                clip_velocity(&mut wishvel, &ground_normal, 1.0); 
-            }
-            wishvel.y = 0.0;
 
             let movedir = na::normalize(&wishvel);
 
-            let curspeed = na::dot(&curvel, &movedir); 
-            let maxdelta = accel * wishspeed * dt;
-            let addspeed = na::clamp((wishspeed - curspeed), 0.0, maxdelta);
+            let curspeed = na::dot(&pl.vel, &movedir); 
+            let maxdelta = accel * real_wishspeed * dt; 
+            let addspeed = na::clamp(wishspeed - curspeed, 0.0, maxdelta);
             pl.vel = pl.vel + (movedir * addspeed);
         }
 
@@ -298,6 +311,11 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.pos = downpos;
             pl.vel = downvel;
         }
+
+        if !pl.flags.contains(PLAYER_ONGROUND) {
+            pl.vel.y += game.movesettings.gravity * dt * 0.5;
+        }
+
     }
 }
     

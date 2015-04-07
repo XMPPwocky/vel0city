@@ -80,7 +80,7 @@ fn main() {
     let mut game = vel0city::Game {
         movesettings: std::default::Default::default(),
         players: vec![vel0city::player::Player {
-            pos: na::Pnt3::new(0.0, -10.0, 0.),
+            pos: na::Pnt3::new(0.0, 0.0, 0.),
             eyeheight: 0.0,
             eyeang: na::zero(), 
             viewpunch: na::zero(), 
@@ -144,7 +144,7 @@ fn main() {
 
     let mut pass_data = vel0city::graphics::passes::PassData::new(&display, (winsize.0, winsize.1)); 
     
-    let tick = 1.0/128.0;
+    let tick = 1.0/200.0;
     let mut lasttime = clock_ticks::precise_time_s();
     let mut accumtime = 0.0;
     let mut smoothtime = 0.0;
@@ -170,15 +170,17 @@ fn main() {
             client.input.handle_event(&win, &ev);
         }
 
-        let mi = client.input.make_moveinput(&game.movesettings);
 
         if accumtime >= tick {
             while accumtime >= tick {
+                let mi = client.input.make_moveinput(&game.movesettings);
                 accumtime -= tick;
                 let timescale = game.timescale; // borrow checker hack
                 let time = tick as f32 * timescale;
                 game.time += time;
                 vel0city::player::movement::move_player(&mut game, 0, &mi, time);
+                // FIXME: hack 
+                client.input.ang = game.players[0].eyeang;
             }
         }
         let pv = game.players[0].vel;
@@ -217,6 +219,8 @@ fn main() {
         };
 
         client.hudmanager.draw_elements(&mut target, &hudcontext, &client.hudelements);
+
+
         target.finish();
     }
         

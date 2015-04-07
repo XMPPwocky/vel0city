@@ -55,7 +55,10 @@ pub fn import(data: &[u8]) -> Result<Map, BspError> {
             inodes: nodes,
         },
         models: models, 
-        entities: vec![::Entity { model: 1 }]
+        entities: vec![
+            ::Entity { model: 1, kind: ::EntityKind::OutOfBounds },
+            ::Entity { model: 2, kind: ::EntityKind::Goal },
+        ]
     })
 }
 

@@ -20,7 +20,13 @@ pub struct Model {
     pub n_brushes: u32 
 }
 pub struct Entity {
-    pub model: u32
+    pub model: u32,
+    pub kind: EntityKind
+}
+#[derive(PartialEq)]
+pub enum EntityKind {
+    OutOfBounds,
+    Goal
 }
 
 pub struct Map {

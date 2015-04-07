@@ -21,7 +21,7 @@ bitflags! {
 }
 
 pub struct Input {
-    ang: na::Vec3<f32>,
+    pub ang: na::Vec3<f32>,
     buttons: Buttons,
     pub cursorpos: (i32, i32),
 
