@@ -212,8 +212,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                     pl.flags.remove(PLAYER_ONGROUND);
                     let jspeed = game.movesettings.jumpspeed;
 
-                    pl.vel.y += -jspeed;
-                    if pl.vel.y > -jspeed { pl.vel.y = -jspeed; }
+                    pl.vel.y = -jspeed; 
                 }
                 pl.flags.insert(PLAYER_HOLDING_JUMP);
             }
