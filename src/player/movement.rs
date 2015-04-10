@@ -263,14 +263,13 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             clip_velocity(&mut wishvel, &ground_normal, 1.0); 
         }
 
-        let real_wishspeed = na::clamp(na::norm(&wishvel), 0.0, game.movesettings.movespeed);
-        let wishspeed = na::clamp(real_wishspeed, 0.0, speedcap);
+        let wishspeed = na::clamp(na::norm(&wishvel), 0.0, speedcap);
         if !na::approx_eq(&wishspeed, &0.0) { 
 
             let movedir = na::normalize(&wishvel);
 
             let curspeed = na::dot(&pl.vel, &movedir); 
-            let maxdelta = accel * real_wishspeed * dt; 
+            let maxdelta = accel * game.movesettings.movespeed * dt; 
             let addspeed = na::clamp(wishspeed - curspeed, 0.0, maxdelta);
             pl.vel = pl.vel + (movedir * addspeed);
         }

@@ -16,7 +16,7 @@ bitflags! {
         const BUTTON_LEFT    = 0b00_00_01_00,
         const BUTTON_RIGHT   = 0b00_00_10_00,
         const BUTTON_JUMP    = 0b00_01_00_00,
-        const BUTTON_RESET   = 0b00_10_00_00,
+        const BUTTON_RESET   = 0b01_00_00_00,
     }
 }
 
@@ -39,7 +39,7 @@ impl Input {
             cursorpos: (400, 300),
             hack: false,
             settings: InputSettings {
-                sensitivity: 0.001,
+                sensitivity: 0.0008,
                 /*
                 forwardkey: W,
                 backkey: A,
