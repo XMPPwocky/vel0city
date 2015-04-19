@@ -172,10 +172,10 @@ impl Tree {
 
 
         // How does the ray interact with this plane?
-        if d1 > (pad ) && d2 > (pad ) {
+        if d1 > pad && d2 > pad {
             // Then just check the front subtree.
             self.cast_ray_recursive(&ray, pos, (start, end), (startpos, endpos))
-        } else if d1 < -(pad ) && d2 < -(pad ) {
+        } else if d1 < -pad && d2 < -pad {
             self.cast_ray_recursive(&ray, neg, (start, end), (startpos, endpos))
         } else {
             let td = d1 - d2;
