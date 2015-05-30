@@ -3,6 +3,9 @@ name = "vel0city"
 version = "0.0.1"
 #build = "build.rs"
 
+[profile.dev]
+opt-level = 3 
+
 [profile.release]
 opt-level = 3 
 debug = true 

@@ -105,7 +105,7 @@ pub fn import_graphics_model(data: &[u8], display: &glium::Display) -> Result<Gr
             lightmaptexcoords: [vert.lightmaptexcoords.x, vert.lightmaptexcoords.y],
             normal: [vert.normal.x, -1.0 * vert.normal.z, vert.normal.y]
         }
-    }).collect();
+    }).collect::<Vec<_>>();
 
     let main_program = glium::Program::from_source(
         display,
@@ -116,7 +116,7 @@ pub fn import_graphics_model(data: &[u8], display: &glium::Display) -> Result<Gr
 
     Ok(GraphicsMap {
         vertices: glium::VertexBuffer::new(display, loaded_vertices),
-        indices: glium::IndexBuffer::new(display, glium::index::TrianglesList(indices)),
+        indices: glium::IndexBuffer::new(display, glium::index::PrimitiveType::TrianglesList, indices),
         shaders: vec![main_program],
         textures: loaded_textures,
         lightmaps: loaded_lightmaps,

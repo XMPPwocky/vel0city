@@ -24,7 +24,7 @@ implement_vertex!(Vertex, position, texcoords);
 
 pub struct Model {
     pub mesh: glium::VertexBuffer<Vertex>,
-    pub indices: glium::IndexBuffer, 
+    pub indices: glium::IndexBuffer<u32>, 
     pub program: Arc<glium::Program>, 
     pub texture: glium::Texture2d,
 }
@@ -79,8 +79,9 @@ fn draw_map<S: glium::Surface>(surface: &mut S, map: &GraphicsMap, view: &View) 
                 diffuse: colorsamp,
                 lightmap: lmsamp 
             };
+            let indexrange = face.index_start as usize..(face.index_start + face.index_count) as usize;
             surface.draw(&map.vertices,
-                       &map.indices.slice(face.index_start as usize, face.index_count as usize).unwrap(),
+                       &map.indices.slice(indexrange).unwrap(),
                        &map.shaders[0],
                        &uniforms,
                        &drawparams_main).unwrap();

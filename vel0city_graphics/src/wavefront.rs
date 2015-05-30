@@ -2,6 +2,7 @@ use wavefront_obj;
 use Vertex;
 use glium;
 use std::sync::Arc;
+use glium::index::PrimitiveType::TrianglesList;
 
 pub fn obj_to_model(obj: &wavefront_obj::obj::Object,
                     program: Arc<glium::Program>,
@@ -32,7 +33,7 @@ pub fn obj_to_model(obj: &wavefront_obj::obj::Object,
 
     ::Model {
         mesh: glium::VertexBuffer::new(display, verts),
-        indices: glium::IndexBuffer::new(display, glium::index::TrianglesList(triangles)),
+        indices: glium::IndexBuffer::new(display, TrianglesList, triangles),
         program: program,
         texture: texture
     }

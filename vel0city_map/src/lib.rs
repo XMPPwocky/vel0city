@@ -1,5 +1,3 @@
-#![feature(core)]
-
 #[macro_use]
 extern crate glium;
 extern crate vel0city_base;
@@ -72,7 +70,7 @@ implement_vertex!(MapVertex, position, texcoords, lightmaptexcoords, normal);
 
 pub struct GraphicsMap {
     pub vertices: glium::VertexBuffer<MapVertex>,
-    pub indices: glium::IndexBuffer,
+    pub indices: glium::IndexBuffer<u32>,
     pub faces: Vec<MapFace>, 
     pub textures: Vec<glium::Texture2d>,
     pub lightmaps: Vec<glium::Texture2d>,

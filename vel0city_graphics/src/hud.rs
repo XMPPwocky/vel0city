@@ -5,11 +5,12 @@ use na;
 use na::{
     ToHomogeneous
 };
+use glium::index::PrimitiveType::TriangleStrip;
 use std::default::Default;
 
 pub struct HudManager {
     quad_verts: glium::VertexBuffer<QuadVertex>,
-    quad_indices: glium::IndexBuffer,
+    quad_indices: glium::IndexBuffer<u8>,
     quad_shader: glium::Program,
 }
 impl HudManager {
@@ -20,7 +21,6 @@ impl HudManager {
             QuadVertex { position: [-1.0, 1.0] },
             QuadVertex { position: [1.0, 1.0] },
         ];
-        let indices = glium::index::TriangleStrip(vec![0u8, 1, 2, 3]);
         
         let program = glium::Program::from_source(
             d,
@@ -32,7 +32,7 @@ impl HudManager {
 
         HudManager {
             quad_verts: glium::VertexBuffer::new(d, verts),
-            quad_indices: glium::index::IndexBuffer::new(d, indices),
+            quad_indices: glium::index::IndexBuffer::new(d, TriangleStrip, vec![0u8, 1, 2, 3]),
             quad_shader: program,
         }
     }

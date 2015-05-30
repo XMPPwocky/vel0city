@@ -194,7 +194,7 @@ impl Tree {
                 ns = 1.0;
                 fs = 0.0;
             }
-            
+
             let ns = na::clamp(ns, 0.0, 1.0);
             let fs = na::clamp(fs, 0.0, 1.0);
 

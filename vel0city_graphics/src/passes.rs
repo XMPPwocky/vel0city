@@ -7,7 +7,7 @@ use na;
 
 pub struct Technique {
     pub shader: glium::Program,
-    pub drawparams: glium::DrawParameters,
+    pub drawparams: glium::DrawParameters<'static>,
 }
 impl Technique {
     pub fn new(shader: glium::Program) -> Technique {
