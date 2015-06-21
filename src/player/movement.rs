@@ -4,6 +4,7 @@ use map::cast::{
 };
 use map::{EntityKind, Map};
 use player::{
+    GrappleTarget,
     Player,
     PlayerFlags,
     PLAYER_ONGROUND,
@@ -13,28 +14,38 @@ use player::{
 };
 use na::{
     self,
-    Rotation
+    Rotate
 };
 use Game;
-use std::f32::consts::PI;
 
 pub struct MoveInput {
-    /// The velocity the player "wishes" to have 
+    /// The velocity the player "wishes" to have.
+    /// Relative to eyeang.
     pub wishvel: na::Vec3<f32>,
 
-    pub eyeang: na::Vec3<f32>,
+    pub eyeang: na::UnitQuat<f32>,
 
     pub jump: bool,
-    pub reset: bool,
+    pub special: bool,
 }
-
+impl MoveInput {
+    pub fn get_abs_wishvel(&self) -> na::Vec3<f32> {
+        self.eyeang.rotate(&self.wishvel)
+    }
+    pub fn get_abs_horiz_wishvel(&self) -> na::Vec3<f32> {
+        let wishvel = self.get_abs_wishvel();
+        let horizwishvel = na::Vec3 { y: 0.0, ..wishvel };
+        na::normalize(&horizwishvel) * na::norm(&wishvel)
+    }
+}
 fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
     let mut dt = dt;
     let mut numcontacts = 0;
     let mut contacts: [na::Vec3<f32>; 4] = [na::zero(); 4]; 
     let mut v = pl.vel;
     pl.flags.remove(PLAYER_CAN_STEP);
-    for _ in 0..3 {
+
+    for _ in numcontacts..3 {
         if dt <= 0.0 { 
             break;
         }
@@ -71,7 +82,7 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
 
             let mut bad = false;
             for i in 0..numcontacts {
-                clip_velocity(&mut v, &contacts[i], 1.01); 
+                clip_velocity(&mut v, &contacts[i], 1.0); 
                 bad = false;
                 for j in (0..numcontacts).filter(|&j| j != i) {
                     if na::dot(&contacts[j], &v) < 0.0 {
@@ -119,55 +130,26 @@ fn how_far(map: &Map, pl: &Player, movement: na::Vec3<f32>) -> (na::Vec3<f32>, O
         (pl.pos.to_vec() + movement, None) 
     }
 }
+
 fn horiz_speed(vel: &na::Vec3<f32>) -> f32 {
     na::norm(&na::Vec2::new(vel.x, vel.z))
 }
 
-fn decay_punch_component(c: f32, dt: f32, scale: f32) -> f32 {
-    if c >= 0.001 {
-        let k = c * 2.0f32.powf(-1.0 * scale * dt);
-        if k > 0.001 {
-            k
-        } else {
-            0.0
-        }
-    } else if c <= -0.001 {
-        let k = c * 2.0f32.powf(-1.0 * scale * dt); 
-        if k < -0.001 {
-            k
-        } else {
-            0.0
-        }
-    } else { 0.0 }
-}
-
-fn decay_punch(punch: na::Vec3<f32>, dt: f32, scale: f32) -> na::Vec3<f32> {
-    na::Vec3::new(
-        decay_punch_component(punch.x, dt, scale),
-        decay_punch_component(punch.y, dt, scale),
-        decay_punch_component(punch.z, dt, scale)
-        )
-}
-
-
-
 pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) {
     {
         let pl = &mut game.players[playeridx as usize];
-        pl.viewpunch = pl.viewpunch + pl.viewpunch_vel * dt;
-        pl.viewpunch = decay_punch(pl.viewpunch, dt, 10.0); 
-        pl.viewpunch_vel = decay_punch(pl.viewpunch_vel, dt, 28.0); 
 
-        pl.eyeang = input.eyeang;
+        pl.eyeang = input.eyeang; 
 
-        if pl.flags.contains(PLAYER_MUST_DIE) || input.reset {
+        if pl.flags.contains(PLAYER_MUST_DIE) {
             pl.pos = na::Pnt3::new(0.0, 0.0, 0.0);
-            pl.eyeang = na::Vec3::new(0.0, 0.0, 0.0);
+            pl.eyeang = na::one();
             pl.vel = na::zero();
             pl.flags = PlayerFlags::empty(); 
             // FIXME: need a better way to handle this
             // without this, you slide when respawning
             pl.flags.insert(PLAYER_ONGROUND);
+            pl.landtime = -game.movesettings.slidetime;
         };
 
         if !pl.flags.contains(PLAYER_ONGROUND) {
@@ -220,6 +202,26 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.flags.remove(PLAYER_HOLDING_JUMP);
         }
 
+        if input.special {
+            if pl.grapple.is_none() {
+                let grappleray = Ray {
+                    orig: pl.get_eyepos(),
+                    dir: na::rotate(&pl.eyeang, &na::Vec3::new(0.0, 0.0, -4096.0)),
+                    halfextents: na::zero() 
+                };
+
+                let cast = game.map.cast_ray(&grappleray);
+                if let Some(CastResult { toi, .. }) = cast {
+                    pl.grapple = Some(GrappleTarget {
+                        pos: grappleray.orig + grappleray.dir * toi,
+                        dist: (na::norm(&grappleray.dir) * toi) + 20.0
+                    });
+                }
+            }
+        } else {
+            pl.grapple = None;
+        }
+
         let accel = if pl.flags.contains(PLAYER_ONGROUND) && game.time > (pl.landtime + game.movesettings.slidetime) {
             game.movesettings.accel
         } else {
@@ -254,10 +256,8 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.vel = dir * newspeed;
         }
 
-        let rot = na::Rot3::new(na::Vec3::new(0.0, input.eyeang.y, 0.0));
-        let mut wishvel = na::rotate(
-            &rot,
-            &input.wishvel);
+        let mut wishvel = input.get_abs_horiz_wishvel(); 
+
         if let Some(ground_normal) = ground_normal {
             clip_velocity(&mut wishvel, &ground_normal, 1.0); 
         }
@@ -271,6 +271,16 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             let maxdelta = accel * game.movesettings.movespeed * dt; 
             let addspeed = na::clamp(wishspeed - curspeed, 0.0, maxdelta);
             pl.vel = pl.vel + (movedir * addspeed);
+        }
+
+        if let Some(ref grapple) = pl.grapple {
+            let grappledir = grapple.pos.to_vec() - pl.pos.to_vec();
+
+            let error = na::norm(&grappledir) - grapple.dist;
+            if error > 0.0 {
+                let normgrappledir = na::normalize(&grappledir);
+                clip_velocity(&mut pl.vel, &normgrappledir, 1.0); 
+            }
         }
 
         let startpos = pl.pos;

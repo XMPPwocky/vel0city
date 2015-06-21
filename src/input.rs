@@ -1,4 +1,7 @@
-use na;
+use na::{
+    self,
+    Rotation
+};
 use glutin;
 use settings::InputSettings;
 use player::movement::MoveInput;
@@ -7,9 +10,7 @@ use std::f32::consts::{
     FRAC_PI_2
 };
 
-
 bitflags! {
-    #[derive(Debug)]
     flags Buttons: u32 {
         const BUTTON_FORWARD = 0b00_00_00_01,
         const BUTTON_BACK    = 0b00_00_00_10,
@@ -17,11 +18,20 @@ bitflags! {
         const BUTTON_RIGHT   = 0b00_00_10_00,
         const BUTTON_JUMP    = 0b00_01_00_00,
         const BUTTON_RESET   = 0b01_00_00_00,
+        const BUTTON_SPECIAL = 0b10_00_00_00,
     }
 }
 
+fn wrap_yaw(yaw: f32) -> f32 {
+    yaw % PI_2
+}
+fn clamp_pitch(pitch: f32) -> f32 {
+    const MAXPITCH: f32 = FRAC_PI_2 - 0.05; 
+    na::clamp(pitch % PI_2, -MAXPITCH, MAXPITCH)
+}
 pub struct Input {
-    pub ang: na::Vec3<f32>,
+    pitch: f32,
+    yaw: f32,
     buttons: Buttons,
     pub cursorpos: (i32, i32),
 
@@ -34,7 +44,8 @@ impl Input {
         use glutin::VirtualKeyCode::*;
 
         Input {
-            ang: na::zero(),
+            pitch: 0.0,
+            yaw: 0.0,
             buttons: Buttons::empty(),
             cursorpos: (400, 300),
             hack: false,
@@ -50,7 +61,6 @@ impl Input {
                 backkey: N,
                 leftkey: Y,
                 rightkey: E,
-                resetkey: Escape,
                 jumpkey: Space
             }
         }
@@ -60,6 +70,7 @@ impl Input {
                         event: &glutin::Event) {
         use glutin::Event::{
             MouseMoved,
+            MouseInput,
             KeyboardInput
         };
 
@@ -87,29 +98,39 @@ impl Input {
                 if vkcode == self.settings.jumpkey { 
                     action(&mut self.buttons, BUTTON_JUMP);
                 }
-                if vkcode == self.settings.resetkey { 
-                    action(&mut self.buttons, BUTTON_RESET);
-                }
             },
             &MouseMoved((absx, absy)) => {
                 if !self.hack { 
                     let (x, y) = (absx - self.cursorpos.0, absy - self.cursorpos.1);
                     let _ = window.set_cursor_position(self.cursorpos.0, self.cursorpos.1);
-
-                    self.ang.y += x as f32 * self.settings.sensitivity;
-                    self.ang.x += y as f32 * self.settings.sensitivity;
-
-                    self.ang.y = (self.ang.y + PI_2) % PI_2;
-                    self.ang.x = na::clamp(self.ang.x, -FRAC_PI_2, FRAC_PI_2);
+                    self.yaw = wrap_yaw(
+                        self.yaw + (x as f32 * self.settings.sensitivity)
+                        );
+                    self.pitch = clamp_pitch(
+                        self.pitch + (y as f32 * self.settings.sensitivity)
+                        );
 
                     self.hack = true;
                 } else {
                     self.hack = false;
                 }
             },
+            &MouseInput(state, glutin::MouseButton::Left) => {
+                if state == glutin::ElementState::Pressed {
+                    self.buttons.insert(BUTTON_SPECIAL);
+                } else {
+                    self.buttons.remove(BUTTON_SPECIAL);
+                }
+            },
             _ => ()
         }
     }
+
+    pub fn get_ang(&self) -> na::UnitQuat<f32> {
+        na::UnitQuat::new(na::Vec3::new(0.0, self.yaw, 0.0))
+            .append_rotation(&na::Vec3::new(self.pitch, 0.0, 0.0))
+    }
+
     pub fn make_moveinput(&self, movesettings: &::settings::MoveSettings) -> MoveInput {
         let mut wvel: na::Vec3<f32> = na::zero();
         if self.buttons.contains(BUTTON_FORWARD) {
@@ -125,16 +146,13 @@ impl Input {
             wvel.x -= movesettings.movespeed;
         }
         let jump = self.buttons.contains(BUTTON_JUMP);
-        let reset = self.buttons.contains(BUTTON_RESET);
+        let special = self.buttons.contains(BUTTON_SPECIAL);
 
         MoveInput {
             wishvel: wvel,
-            eyeang: self.ang,
+            eyeang: self.get_ang(),
             jump: jump,
-            reset: reset,
+            special: special,
         }
-    }
-    pub fn get_ang(&self) -> na::Vec3<f32> { 
-        self.ang
     }
 }

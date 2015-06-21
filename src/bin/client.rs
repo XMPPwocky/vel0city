@@ -14,6 +14,7 @@ use vel0city::graphics::hud;
 use na::{
     Diag,
     Rotation,
+    Rotate,
     ToHomogeneous,
     Inv
 };
@@ -37,7 +38,10 @@ impl Client {
         let tex = glium::Texture2d::new(display, tex);
 
         fn id(context: &hud::Context) -> Option<na::Mat4<f32>> {
-            let ang = std::f32::consts::PI - (context.player_vel.x.atan2(context.player_vel.z) - context.eyeang.y);
+            let eyedir = context.eyeang.rotate(&na::Vec3::new(0.0, 0.0, -1.0));
+            let eye_heading = f32::atan2(eyedir.x, eyedir.z);
+            let vel_heading = f32::atan2(context.player_vel.x, context.player_vel.z);
+            let ang = eye_heading - vel_heading; 
             let scale = na::norm(&na::Vec2::new(context.player_vel.x, context.player_vel.z)) / 1500.0;
             if scale > 0.03 {
                 let scalemat = na::Mat4::from_diag(&na::Vec4::new(0.15, scale, 1.0, 1.0));
@@ -74,23 +78,12 @@ fn main() {
     let mut client = Client::new(&display);
     let (x, y) = display.get_framebuffer_dimensions();
 
-    let proj = na::Persp3::new(x as f32 / y as f32, 90.0, 1.5, 4096.0).to_mat();
+    let proj = na::Persp3::new(x as f32 / y as f32, 90.0, 1.0, 4096.0).to_mat();
 
     let asset = assets::load_bin_asset("maps/test.bsp").unwrap();
     let mut game = vel0city::Game {
         movesettings: std::default::Default::default(),
-        players: vec![vel0city::player::Player {
-            pos: na::Pnt3::new(0.0, 0.0, 0.),
-            eyeheight: 0.0,
-            eyeang: na::zero(), 
-            viewpunch: na::zero(), 
-            viewpunch_vel: na::zero(), 
-            halfextents: vel0city::player::PLAYER_HALFEXTENTS,
-            vel: na::zero(),
-            flags: vel0city::player::PlayerFlags::empty(),
-            landtime: 0.0,
-            holdjumptime: 0.0,
-        }],
+        players: vec![Default::default()],
         map: vel0city::map::q3_import::import(&asset).unwrap(),
         timescale: 1.0,
         time: 0.0,
@@ -148,7 +141,7 @@ fn main() {
     let mut lasttime = clock_ticks::precise_time_s();
     let mut accumtime = 0.0;
     let mut smoothtime = 0.0;
-    while !display.is_closed() {
+    'mainloop: loop { 
         let curtime = clock_ticks::precise_time_s();
         let frametime = curtime - lasttime;
         accumtime += frametime;
@@ -166,6 +159,9 @@ fn main() {
                     pass_data = vel0city::graphics::passes::PassData::new(&display, (winsize.0, winsize.1)); 
                     client.input.cursorpos = (winsize.0 as i32 / 2, winsize.1 as i32 / 2);
                 },
+                &glutin::Event::Closed => {
+                    break 'mainloop
+                },
                 _ => ()
             }
 
@@ -182,23 +178,21 @@ fn main() {
                 game.time += time;
                 vel0city::player::movement::move_player(&mut game, 0, &mi, time);
                 // FIXME: hack 
-                client.input.ang = game.players[0].eyeang;
+                //client.input.ang = game.players[0].eyeang;
             }
         }
+
         let pv = game.players[0].vel;
+        let rot = game.players[0].eyeang
+            .append_rotation(&na::Vec3::new(PI, 0.0, 0.0)).to_rot();
 
-        let ang = game.players[0].eyeang + game.players[0].viewpunch;
-        let rot = na::UnitQuat::new(na::Vec3::new(0.0, ang.y, 0.0));
-        let rot = rot.append_rotation(
-            &na::Vec3::new(PI + ang.x, 0.0, 0.0)
-            );
-
-        let l = na::Iso3::new_with_rotmat(na::zero(), rot.to_rot()).inv().unwrap().to_homogeneous();
-        let v = na::Iso3::new((game.players[0].pos.to_vec() + na::Vec3 { y: vel0city::player::PLAYER_HALFEXTENTS.y * -0.6, ..na::zero() }) * -1.0, na::zero()).to_homogeneous();
+        let l = na::Iso3::new_with_rotmat(na::zero(), rot).inv().unwrap().to_homogeneous();
+        let v = na::Iso3::new(game.players[0].get_eyepos().to_vec() * -1.0, na::zero()).to_homogeneous(); 
+        let lv = l * v;
         //l.inv();
         let view = vel0city::graphics::View {
-            cam: l * v,
-            w2s: proj * l * v,
+            cam: lv,
+            w2s: proj * lv,
         };
 
         let mut target = display.draw();
@@ -222,8 +216,7 @@ fn main() {
 
         client.hudmanager.draw_elements(&mut target, &hudcontext, &client.hudelements);
 
-
-        target.finish();
+        target.finish().unwrap();
     }
         
 }

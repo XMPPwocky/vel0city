@@ -23,20 +23,23 @@ pub struct MoveSettings {
     pub friction: f32,
 
     pub slidetime: f32,
+
+    pub specialcooldown: f32,
 }
 impl std::default::Default for MoveSettings {
     fn default() -> MoveSettings {
         MoveSettings {
-            gravity: 600.0,
+            gravity: 750.0,
             accel: 18.0,
-            airaccel: 3.5,
+            airaccel: 6.0,
             speedeps: 50.0,
             maxspeed: 1000.0,
             movespeed: 220.0,
-            airspeed: 50.0,
-            jumpspeed: 240.0,
+            airspeed: 60.0,
+            jumpspeed: 280.0,
             friction: 8.0, 
-            slidetime: 0.17,
+            slidetime: 0.11,
+            specialcooldown: 1.0,
         }
     }
 }
@@ -49,6 +52,5 @@ pub struct InputSettings {
     pub leftkey: VirtualKeyCode,
     pub rightkey: VirtualKeyCode,
     pub jumpkey: VirtualKeyCode,
-    pub resetkey: VirtualKeyCode,
 }
 

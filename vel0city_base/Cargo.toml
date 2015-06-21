@@ -2,3 +2,6 @@
 name = "vel0city_base"
 version = "0.0.1"
 authors = ["Nathaniel Theis <nttheis@gmail.com>"]
+
+[dependencies.nalgebra]
+nalgebra = "*"

@@ -76,7 +76,7 @@ impl HudManager {
 
 
 pub struct Context {
-    pub eyeang: na::Vec3<f32>,
+    pub eyeang: na::UnitQuat<f32>,
     pub player_vel: na::Vec3<f32>,
 }
 
