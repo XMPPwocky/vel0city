@@ -214,7 +214,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                 if let Some(CastResult { toi, .. }) = cast {
                     pl.grapple = Some(GrappleTarget {
                         pos: grappleray.orig + grappleray.dir * toi,
-                        dist: (na::norm(&grappleray.dir) * toi) + 20.0
+                        dist: (na::norm(&grappleray.dir) * toi) + 10.0
                     });
                 }
             }
@@ -277,9 +277,10 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             let grappledir = grapple.pos.to_vec() - pl.pos.to_vec();
 
             let error = na::norm(&grappledir) - grapple.dist;
-            if error > 0.0 {
+            if error > 0.0 && na::dot(&pl.vel, &grappledir) < 0.0 {
                 let normgrappledir = na::normalize(&grappledir);
-                clip_velocity(&mut pl.vel, &normgrappledir, 1.0); 
+                let reflection = na::clamp( (error) / 30.0, 0.0, 1.95 ); 
+                clip_velocity(&mut pl.vel, &normgrappledir, reflection); 
             }
         }
 
