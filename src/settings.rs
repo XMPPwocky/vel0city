@@ -31,9 +31,9 @@ impl std::default::Default for MoveSettings {
         MoveSettings {
             gravity: 750.0,
             accel: 18.0,
-            airaccel: 6.0,
-            speedeps: 50.0,
-            maxspeed: 1000.0,
+            airaccel: 3.5,
+            speedeps: 45.0,
+            maxspeed: 6000.0,
             movespeed: 220.0,
             airspeed: 60.0,
             jumpspeed: 280.0,
