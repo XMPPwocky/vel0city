@@ -39,13 +39,25 @@ impl MoveInput {
     }
 }
 fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
+    let localvel = if let Some(ref grapple) = pl.grapple {
+            let grappledir = grapple.pos.to_vec() - pl.get_eyepos().to_vec();
+
+            let curdist = na::norm(&grappledir);
+            let error = curdist - grapple.dist; 
+            if error > 0.0 { 
+                let normgrappledir = na::normalize(&grappledir);
+
+                normgrappledir * (error * 1000.0 * dt)
+            } else { na::zero() }
+    } else { na::zero() };
+
     let mut dt = dt;
     let mut numcontacts = 0;
-    let mut contacts: [na::Vec3<f32>; 4] = [na::zero(); 4]; 
-    let mut v = pl.vel;
+    let mut contacts: [na::Vec3<f32>; 5] = [na::zero(); 5]; 
+    let mut v = pl.vel + localvel;
     pl.flags.remove(PLAYER_CAN_STEP);
 
-    for _ in numcontacts..3 {
+    for _ in numcontacts..contacts.len() {
         if dt <= 0.0 { 
             break;
         }
@@ -80,42 +92,41 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
             }
             contacts[numcontacts - 1] = norm;
 
-            let mut bad = false;
-            for i in 0..numcontacts {
-                clip_velocity(&mut v, &contacts[i], 1.0); 
-                bad = false;
-                for j in (0..numcontacts).filter(|&j| j != i) {
-                    if na::dot(&contacts[j], &v) < 0.0 {
-                        bad = true; 
-                        break;
-                    }
-                }
-                if !bad {
+        }
+        let mut bad = false;
+        for i in 0..numcontacts {
+            clip_velocity(&mut v, &contacts[i], 1.0); 
+            bad = false;
+            for j in (0..numcontacts).filter(|&j| j != i) {
+                if na::dot(&contacts[j], &v) < 0.0 {
+                    bad = true; 
                     break;
                 }
             }
-            if bad {
-                if numcontacts == 1 {
-                    println!("Clip failed with one contact? impossible!");
-                } else if numcontacts == 2 {
-                    let movedir = na::normalize(&v);
-                    let crease = na::cross(&contacts[0], &contacts[1]);
-                    v = crease * na::dot(&v, &crease);
-                    v = v * (1.0 + 0.5 * na::dot(&movedir, &contacts[0]) + 0.5 * na::dot(&movedir, &contacts[1])); 
-                } else {
-                    // stuck in corner
-                    v = na::zero();
-                }
+            if !bad {
+                break;
             }
-            if na::dot(&v, &pl.vel) < 0.0 {
-                v = na::zero(); 
+        }
+        if bad {
+            if numcontacts == 1 {
+                println!("Clip failed with one contact? impossible!");
+            } else if numcontacts == 2 {
+                let movedir = na::normalize(&v);
+                let crease = na::cross(&contacts[0], &contacts[1]);
+                v = crease * na::dot(&v, &crease);
+                v = v * (1.0 + 0.5 * na::dot(&movedir, &contacts[0]) + 0.5 * na::dot(&movedir, &contacts[1])); 
+            } else {
+                // stuck in corner
+                v = na::zero();
             }
-        } else {
-            pl.pos = pl.pos + v * dt;
-            break;
+        }
+        if na::dot(&v, &pl.vel) < 0.0 {
+            v = na::zero(); 
         }
     }
-    pl.vel = v;
+    pl.pos = pl.pos + v * dt;
+    pl.vel = v - localvel;
+
 }
 
 fn is_hanging_from_grapple(pl: &Player) -> bool {
@@ -195,6 +206,10 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         }
 
         if input.jump { 
+            if let Some(ref mut grapple) = pl.grapple {
+                grapple.dist = f32::max(grapple.dist - (300.0 * dt), 30.0);
+            }
+
             if !pl.flags.contains(PLAYER_HOLDING_JUMP) || game.time < (pl.holdjumptime + game.movesettings.slidetime) {
                 if !pl.flags.contains(PLAYER_HOLDING_JUMP) {
                     pl.holdjumptime = game.time;
@@ -223,7 +238,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                 if let Some(CastResult { toi, .. }) = cast {
                     pl.grapple = Some(GrappleTarget {
                         pos: grappleray.orig + grappleray.dir * toi,
-                        dist: (na::norm(&grappleray.dir) * toi) + 1.0
+                        dist: (na::norm(&grappleray.dir) * toi) + 30.0
                     });
                 }
             }
@@ -286,15 +301,19 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.vel = pl.vel + (movedir * addspeed);
         }
 
+
         if let Some(ref grapple) = pl.grapple {
             let grappledir = grapple.pos.to_vec() - pl.get_eyepos().to_vec();
 
             let curdist = na::norm(&grappledir);
             let error = curdist - grapple.dist; 
-            if error > 0.0 && na::dot(&pl.vel, &grappledir) < 0.0 {
+            if error > 0.0 { 
                 let normgrappledir = na::normalize(&grappledir);
-                let reflection = na::clamp( error / 10.0 , 0.0, 1.3 ); 
-                clip_velocity(&mut pl.vel, &normgrappledir, reflection); 
+
+                if na::dot(&pl.vel, &grappledir) < 0.0 {
+                    let reflection = na::clamp( error / 10.0 , 0.0, 1.3 ); 
+                    clip_velocity(&mut pl.vel, &normgrappledir, reflection); 
+                }
             }
         }
 
@@ -341,7 +360,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
 
     }
 }
-    
+
 fn clip_middle(n: f32, eps: f32) -> f32 { 
     if na::abs(&n) < eps {
         0.0
