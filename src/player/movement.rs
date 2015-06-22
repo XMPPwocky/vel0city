@@ -120,7 +120,7 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
 
 fn is_hanging_from_grapple(pl: &Player) -> bool {
     if let Some(ref grapple) = pl.grapple {
-        na::norm(&(grapple.pos.to_vec() - pl.pos.to_vec())) >= grapple.dist
+        na::norm(&(grapple.pos.to_vec() - pl.get_eyepos().to_vec())) >= grapple.dist
     } else {
         false
     }
@@ -223,7 +223,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
                 if let Some(CastResult { toi, .. }) = cast {
                     pl.grapple = Some(GrappleTarget {
                         pos: grappleray.orig + grappleray.dir * toi,
-                        dist: (na::norm(&grappleray.dir) * toi) + 10.0
+                        dist: (na::norm(&grappleray.dir) * toi) + 1.0
                     });
                 }
             }
@@ -235,7 +235,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             game.movesettings.accel
         } else {
             if is_hanging_from_grapple(pl) {
-                game.movesettings.airaccel / 3.0 
+                game.movesettings.airaccel / 2.0 
             } else {
                 game.movesettings.airaccel
             }
@@ -286,14 +286,14 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.vel = pl.vel + (movedir * addspeed);
         }
 
-        if let Some(ref mut grapple) = pl.grapple {
-            let grappledir = grapple.pos.to_vec() - pl.pos.to_vec();
+        if let Some(ref grapple) = pl.grapple {
+            let grappledir = grapple.pos.to_vec() - pl.get_eyepos().to_vec();
 
             let curdist = na::norm(&grappledir);
-            let error = curdist / grapple.dist;
-            if error > 1.0 && na::dot(&pl.vel, &grappledir) < 0.0 {
+            let error = curdist - grapple.dist; 
+            if error > 0.0 && na::dot(&pl.vel, &grappledir) < 0.0 {
                 let normgrappledir = na::normalize(&grappledir);
-                let reflection = na::clamp( error , 0.0, 2.0 ); 
+                let reflection = na::clamp( error / 10.0 , 0.0, 1.3 ); 
                 clip_velocity(&mut pl.vel, &normgrappledir, reflection); 
             }
         }

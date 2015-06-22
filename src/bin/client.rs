@@ -170,6 +170,8 @@ fn main() {
 
 
         if accumtime >= tick {
+            // handle dropped frames more gracefully
+            accumtime = f64::min(tick * 3.0, accumtime);
             while accumtime >= tick {
                 let mi = client.input.make_moveinput(&game.movesettings);
                 accumtime -= tick;
