@@ -118,6 +118,14 @@ fn simple_move(map: &Map, pl: &mut Player, dt: f32) {
     pl.vel = v;
 }
 
+fn is_hanging_from_grapple(pl: &Player) -> bool {
+    if let Some(ref grapple) = pl.grapple {
+        na::norm(&(grapple.pos.to_vec() - pl.pos.to_vec())) >= grapple.dist
+    } else {
+        false
+    }
+}
+
 fn how_far(map: &Map, pl: &Player, movement: na::Vec3<f32>) -> (na::Vec3<f32>, Option<na::Vec3<f32>>) {
     let trace = map.cast_ray(&Ray {
         orig: pl.pos,
@@ -146,6 +154,7 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.eyeang = na::one();
             pl.vel = na::zero();
             pl.flags = PlayerFlags::empty(); 
+            pl.grapple = None;
             // FIXME: need a better way to handle this
             // without this, you slide when respawning
             pl.flags.insert(PLAYER_ONGROUND);
@@ -225,7 +234,11 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
         let accel = if pl.flags.contains(PLAYER_ONGROUND) && game.time > (pl.landtime + game.movesettings.slidetime) {
             game.movesettings.accel
         } else {
-            game.movesettings.airaccel
+            if is_hanging_from_grapple(pl) {
+                game.movesettings.airaccel / 3.0 
+            } else {
+                game.movesettings.airaccel
+            }
         };
         let friction = if pl.flags.contains(PLAYER_ONGROUND) && game.time > (pl.landtime + game.movesettings.slidetime) { 
             game.movesettings.friction 
@@ -273,13 +286,14 @@ pub fn move_player(game: &mut Game, playeridx: u32, input: &MoveInput, dt: f32) 
             pl.vel = pl.vel + (movedir * addspeed);
         }
 
-        if let Some(ref grapple) = pl.grapple {
+        if let Some(ref mut grapple) = pl.grapple {
             let grappledir = grapple.pos.to_vec() - pl.pos.to_vec();
 
-            let error = na::norm(&grappledir) - grapple.dist;
-            if error > 0.0 && na::dot(&pl.vel, &grappledir) < 0.0 {
+            let curdist = na::norm(&grappledir);
+            let error = curdist / grapple.dist;
+            if error > 1.0 && na::dot(&pl.vel, &grappledir) < 0.0 {
                 let normgrappledir = na::normalize(&grappledir);
-                let reflection = na::clamp( (error) / 30.0, 0.0, 1.95 ); 
+                let reflection = na::clamp( error , 0.0, 2.0 ); 
                 clip_velocity(&mut pl.vel, &normgrappledir, reflection); 
             }
         }

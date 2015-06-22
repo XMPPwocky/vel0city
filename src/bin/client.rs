@@ -137,7 +137,7 @@ fn main() {
 
     let mut pass_data = vel0city::graphics::passes::PassData::new(&display, (winsize.0, winsize.1)); 
     
-    let tick = 1.0/200.0;
+    let tick = 1.0/120.0;
     let mut lasttime = clock_ticks::precise_time_s();
     let mut accumtime = 0.0;
     let mut smoothtime = 0.0;
